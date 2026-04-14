@@ -138,50 +138,50 @@
 | AUTH-02 | Phase 2 | Pending |
 | AUTH-03 | Phase 2 | Pending |
 | AUTH-04 | Phase 3 | Pending |
-| AUTH-05 | Phase 3 | Pending |
 | ROLE-01 | Phase 3 | Pending |
-| ROLE-02 | Phase 4 | Pending |
-| ROLE-03 | Phase 4 | Pending |
-| ROLE-04 | Phase 5 | Pending |
-| ROLE-05 | Phase 5 | Pending |
-| FILE-01 | Phase 6 | Pending |
-| FILE-02 | Phase 6 | Pending |
-| FILE-03 | Phase 6 | Pending |
-| CRSE-01 | Phase 7 | Pending |
-| CRSE-02 | Phase 7 | Pending |
-| CRSE-03 | Phase 7 | Pending |
-| CRSE-04 | Phase 7 | Pending |
-| CRSE-05 | Phase 8 | Pending |
-| CRSE-06 | Phase 8 | Pending |
-| ASGN-01 | Phase 9 | Pending |
-| ASGN-03 | Phase 9 | Pending |
-| ASGN-02 | Phase 10 | Pending |
-| ASGN-04 | Phase 10 | Pending |
-| ASGN-05 | Phase 10 | Pending |
-| ASGN-06 | Phase 10 | Pending |
-| GRAD-01 | Phase 11 | Pending |
-| GRAD-02 | Phase 11 | Pending |
-| GRAD-03 | Phase 11 | Pending |
-| QUIZ-01 | Phase 12 | Pending |
-| QUIZ-02 | Phase 12 | Pending |
-| QUIZ-03 | Phase 13 | Pending |
-| QUIZ-04 | Phase 13 | Pending |
-| QUIZ-05 | Phase 14 | Pending |
-| QUIZ-06 | Phase 14 | Pending |
-| COMM-01 | Phase 15 | Pending |
-| COMM-02 | Phase 15 | Pending |
-| COMM-03 | Phase 15 | Pending |
-| COMM-04 | Phase 16 | Pending |
-| COMM-05 | Phase 16 | Pending |
-| COMM-06 | Phase 16 | Pending |
-| AUDT-01 | Phase 17 | Pending |
-| AUDT-02 | Phase 17 | Pending |
-| ANLT-01 | Phase 18 | Pending |
-| ANLT-02 | Phase 18 | Pending |
-| ANLT-03 | Phase 18 | Pending |
-| AUTO-01 | Phase 19 | Pending |
-| AUTO-02 | Phase 19 | Pending |
-| AUTO-03 | Phase 19 | Pending |
+| AUTH-05 | Phase 4 | Pending |
+| ROLE-02 | Phase 5 | Pending |
+| ROLE-03 | Phase 5 | Pending |
+| ROLE-04 | Phase 6 | Pending |
+| ROLE-05 | Phase 6 | Pending |
+| FILE-01 | Phase 7 | Pending |
+| FILE-02 | Phase 7 | Pending |
+| FILE-03 | Phase 7 | Pending |
+| CRSE-01 | Phase 8 | Pending |
+| CRSE-02 | Phase 8 | Pending |
+| CRSE-03 | Phase 8 | Pending |
+| CRSE-04 | Phase 8 | Pending |
+| CRSE-05 | Phase 9 | Pending |
+| CRSE-06 | Phase 9 | Pending |
+| ASGN-01 | Phase 10 | Pending |
+| ASGN-03 | Phase 10 | Pending |
+| ASGN-02 | Phase 11 | Pending |
+| ASGN-04 | Phase 11 | Pending |
+| ASGN-05 | Phase 11 | Pending |
+| ASGN-06 | Phase 11 | Pending |
+| GRAD-01 | Phase 12 | Pending |
+| GRAD-02 | Phase 12 | Pending |
+| GRAD-03 | Phase 12 | Pending |
+| QUIZ-01 | Phase 13 | Pending |
+| QUIZ-02 | Phase 13 | Pending |
+| QUIZ-03 | Phase 14 | Pending |
+| QUIZ-04 | Phase 14 | Pending |
+| QUIZ-05 | Phase 15 | Pending |
+| QUIZ-06 | Phase 15 | Pending |
+| COMM-01 | Phase 16 | Pending |
+| COMM-02 | Phase 16 | Pending |
+| COMM-03 | Phase 16 | Pending |
+| COMM-04 | Phase 17 | Pending |
+| COMM-05 | Phase 17 | Pending |
+| COMM-06 | Phase 17 | Pending |
+| AUDT-01 | Phase 18 | Pending |
+| AUDT-02 | Phase 18 | Pending |
+| ANLT-01 | Phase 19 | Pending |
+| ANLT-02 | Phase 19 | Pending |
+| ANLT-03 | Phase 19 | Pending |
+| AUTO-01 | Phase 20 | Pending |
+| AUTO-02 | Phase 20 | Pending |
+| AUTO-03 | Phase 20 | Pending |
 
 **Coverage:**
 - v1 requirements: 48 total
@@ -190,4 +190,4 @@
 
 ---
 *Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after roadmap restructuring to 19 phases*
+*Last updated: 2026-04-14 after splitting Phase 3 (20 phases)*
