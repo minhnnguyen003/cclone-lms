@@ -182,7 +182,43 @@ A general-purpose, data-driven Learning Management System built for educational 
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
 ## Conventions
 
-Conventions not yet established. Will populate as patterns emerge during development.
+### Language
+- All code, comments, commit messages, and documentation in **English only**
+
+### Git
+- **Conventional Commits**: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `perf:`
+- Scope optional but encouraged: `feat(auth): add JWT refresh flow`
+
+### TypeScript
+- `strict: true` with `noImplicitAny` -- **no `any` allowed anywhere**
+- If a type is genuinely unknown, use `unknown` and narrow it
+- No `// @ts-ignore` or `// eslint-disable` without written justification in the comment
+
+### Backend (NestJS)
+- **Naming**: camelCase for variables/functions, PascalCase for classes/interfaces/enums, kebab-case for file names
+- **Path aliases**: Use `@/` aliases (e.g., `@/modules/auth`, `@/common/guards`)
+- **Imports**: External libs first, then `@/` internal modules, then relative imports. Alphabetical within each group.
+- **Error handling**: Domain-specific custom error classes (`CourseNotFoundError`, `QuizExpiredError`, etc.) that extend a base `DomainError`. Map to HTTP exceptions at the controller layer.
+- **API response format**: JSON:API style -- `{ data: {...}, meta: {...}, errors: [...] }`
+- **Validation**: `class-validator` + `class-transformer` on DTOs with `ValidationPipe`
+- **Testing**: Unit tests co-located with source (`.spec.ts`), e2e tests in `test/` directory
+
+### Database (PostgreSQL + Prisma)
+- **Column naming**: `snake_case` (e.g., `user_id`, `created_at`, `course_title`)
+- **Primary keys**: UUID on all entities (never auto-increment)
+- **Soft deletes**: `deleted_at` timestamp column instead of hard deletes
+- **Timestamps**: `created_at` + `updated_at` on every table
+- **Prisma model naming**: PascalCase models, maps to snake_case tables via `@@map`
+
+### Frontend (React)
+- **Components**: Arrow function with named export: `export const MyComponent = () => { ... }`
+- **Path aliases**: Use `@/` aliases (e.g., `@/components`, `@/hooks`, `@/services`)
+- **Imports**: Same grouping rules as backend -- external, then `@/`, then relative
+- **State**: TanStack Query for server state, Zustand for client/UI state
+- **Forms**: react-hook-form + zod for validation
+
+### Documentation
+- (To be established -- conventions pending)
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
