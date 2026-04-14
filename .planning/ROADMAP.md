@@ -2,7 +2,7 @@
 
 **Created:** 2026-04-14
 **Milestone:** v1.0
-**Phases:** 20
+**Phases:** 22
 **Requirements:** 48 mapped
 
 ## Phase Overview
@@ -16,19 +16,21 @@
 | 5 | Roles & Permissions | Admin can assign roles and resource-level authorization is enforced | ROLE-02, ROLE-03 (2) | TBD |
 | 6 | Multi-tenancy & Isolation | Tenant data is isolated via PostgreSQL RLS and privilege escalation is prevented | ROLE-04, ROLE-05 (2) | TBD |
 | 7 | File Management | Files upload to MinIO with validation and signed URL access | FILE-01, FILE-02, FILE-03 (3) | TBD |
-| 8 | Course CRUD & Enrollment | Admin can create courses, instructors can manage them, students can view and be enrolled | CRSE-01..04 (4) | TBD |
-| 9 | Course Dashboard & Content | Course dashboard shows enrolled users and instructors can create content pages | CRSE-05, CRSE-06 (2) | TBD |
-| 10 | Assignment Creation | Instructors can create assignments with due dates, attachments, and status tracking | ASGN-01, ASGN-03 (2) | TBD |
-| 11 | Assignment Submission & Feedback | Students submit work, instructors grade with comments and feedback files | ASGN-02, ASGN-04, ASGN-05, ASGN-06 (4) | TBD |
-| 12 | Gradebook | Instructors and students can view grades with weighted categories | GRAD-01, GRAD-02, GRAD-03 (3) | TBD |
-| 13 | Quiz Creation & Config | Instructors can create quizzes with multiple question types and configure settings | QUIZ-01, QUIZ-02 (2) | TBD |
-| 14 | Quiz Taking & Auto-save | Students can take timed quizzes with auto-save and crash recovery | QUIZ-03, QUIZ-04 (2) | TBD |
-| 15 | Quiz Grading | Objective questions auto-grade; essays enter manual grading queue | QUIZ-05, QUIZ-06 (2) | TBD |
-| 16 | Discussion Board | Courses have threaded discussion boards with nested replies and moderation | COMM-01, COMM-02, COMM-03 (3) | TBD |
-| 17 | Notifications & Calendar | Users receive in-app notifications and see upcoming deadlines on a calendar | COMM-04, COMM-05, COMM-06 (3) | TBD |
-| 18 | Audit & Security | All significant user actions are logged with a filterable audit trail | AUDT-01, AUDT-02 (2) | TBD |
-| 19 | Analytics Pipeline | Domain events stored in ClickHouse with materialized views for analysis | ANLT-01, ANLT-02, ANLT-03 (3) | TBD |
-| 20 | Automation Engine | Instructors can define rules that auto-respond to student behavior | AUTO-01, AUTO-02, AUTO-03 (3) | TBD |
+| 8 | Course Management - Admin | Admin can create, edit, delete courses and enroll students | CRSE-01, CRSE-04 (2) | TBD |
+| 9 | Course Management - Instructor | Instructor can manage courses assigned to them | CRSE-02 (1) | TBD |
+| 10 | Course Management - Student | Student can view and search available courses | CRSE-03 (1) | TBD |
+| 11 | Course Dashboard & Content | Course dashboard shows enrolled users and instructors can create content pages | CRSE-05, CRSE-06 (2) | TBD |
+| 12 | Assignment Creation | Instructors can create assignments with due dates, attachments, and status tracking | ASGN-01, ASGN-03 (2) | TBD |
+| 13 | Assignment Submission & Feedback | Students submit work, instructors grade with comments and feedback files | ASGN-02, ASGN-04, ASGN-05, ASGN-06 (4) | TBD |
+| 14 | Gradebook | Instructors and students can view grades with weighted categories | GRAD-01, GRAD-02, GRAD-03 (3) | TBD |
+| 15 | Quiz Creation & Config | Instructors can create quizzes with multiple question types and configure settings | QUIZ-01, QUIZ-02 (2) | TBD |
+| 16 | Quiz Taking & Auto-save | Students can take timed quizzes with auto-save and crash recovery | QUIZ-03, QUIZ-04 (2) | TBD |
+| 17 | Quiz Grading | Objective questions auto-grade; essays enter manual grading queue | QUIZ-05, QUIZ-06 (2) | TBD |
+| 18 | Discussion Board | Courses have threaded discussion boards with nested replies and moderation | COMM-01, COMM-02, COMM-03 (3) | TBD |
+| 19 | Notifications & Calendar | Users receive in-app notifications and see upcoming deadlines on a calendar | COMM-04, COMM-05, COMM-06 (3) | TBD |
+| 20 | Audit & Security | All significant user actions are logged with a filterable audit trail | AUDT-01, AUDT-02 (2) | TBD |
+| 21 | Analytics Pipeline | Domain events stored in ClickHouse with materialized views for analysis | ANLT-01, ANLT-02, ANLT-03 (3) | TBD |
+| 22 | Automation Engine | Instructors can define rules that auto-respond to student behavior | AUTO-01, AUTO-02, AUTO-03 (3) | TBD |
 
 ---
 
@@ -181,35 +183,73 @@
 
 ---
 
-## Phase 8: Course CRUD & Enrollment
+## Phase 8: Course Management - Admin
 
-**Goal:** Admin can create courses, instructors can manage them, students can view and be enrolled
+**Goal:** Admin can create, edit, delete courses and enroll students
 
 **UI hint**: yes
 
 **Depends on:** Phase 5, Phase 6
 
 **Requirements:**
-- CRSE-01, CRSE-02, CRSE-03, CRSE-04
+- CRSE-01, CRSE-04
 
 **Success Criteria:**
 1. Admin can create, edit, and delete courses
-2. Instructor can manage courses assigned to them
-3. Student can view and search available courses
-4. Admin can add students to a course
+2. Admin can add students to a course
 
 **Research flags:**
 - None
 
 ---
 
-## Phase 9: Course Dashboard & Content
+## Phase 9: Course Management - Instructor
+
+**Goal:** Instructor can manage courses assigned to them
+
+**UI hint**: yes
+
+**Depends on:** Phase 8
+
+**Requirements:**
+- CRSE-02
+
+**Success Criteria:**
+1. Instructor can view courses assigned to them
+2. Instructor can edit course details and manage course content for their assigned courses
+
+**Research flags:**
+- None
+
+---
+
+## Phase 10: Course Management - Student
+
+**Goal:** Student can view and search available courses
+
+**UI hint**: yes
+
+**Depends on:** Phase 8
+
+**Requirements:**
+- CRSE-03
+
+**Success Criteria:**
+1. Student can view a list of available courses
+2. Student can search and filter courses
+
+**Research flags:**
+- None
+
+---
+
+## Phase 11: Course Dashboard & Content
 
 **Goal:** Course dashboard shows enrolled users and instructors can create content pages
 
 **UI hint**: yes
 
-**Depends on:** Phase 8
+**Depends on:** Phase 9
 
 **Requirements:**
 - CRSE-05, CRSE-06
@@ -223,13 +263,13 @@
 
 ---
 
-## Phase 10: Assignment Creation
+## Phase 12: Assignment Creation
 
 **Goal:** Instructors can create assignments with due dates, attachments, and status tracking
 
 **UI hint**: yes
 
-**Depends on:** Phase 7, Phase 9
+**Depends on:** Phase 7, Phase 11
 
 **Requirements:**
 - ASGN-01, ASGN-03
@@ -243,13 +283,13 @@
 
 ---
 
-## Phase 11: Assignment Submission & Feedback
+## Phase 13: Assignment Submission & Feedback
 
 **Goal:** Students submit work, instructors grade with comments and feedback files
 
 **UI hint**: yes
 
-**Depends on:** Phase 10
+**Depends on:** Phase 12
 
 **Requirements:**
 - ASGN-02, ASGN-04, ASGN-05, ASGN-06
@@ -265,13 +305,13 @@
 
 ---
 
-## Phase 12: Gradebook
+## Phase 14: Gradebook
 
 **Goal:** Instructors and students can view grades with weighted categories
 
 **UI hint**: yes
 
-**Depends on:** Phase 11
+**Depends on:** Phase 13
 
 **Requirements:**
 - GRAD-01, GRAD-02, GRAD-03
@@ -286,13 +326,13 @@
 
 ---
 
-## Phase 13: Quiz Creation & Config
+## Phase 15: Quiz Creation & Config
 
 **Goal:** Instructors can create quizzes with multiple question types and configure settings
 
 **UI hint**: yes
 
-**Depends on:** Phase 9
+**Depends on:** Phase 11
 
 **Requirements:**
 - QUIZ-01, QUIZ-02
@@ -306,13 +346,13 @@
 
 ---
 
-## Phase 14: Quiz Taking & Auto-save
+## Phase 16: Quiz Taking & Auto-save
 
 **Goal:** Students can take timed quizzes with auto-save and crash recovery
 
 **UI hint**: yes
 
-**Depends on:** Phase 13
+**Depends on:** Phase 15
 
 **Requirements:**
 - QUIZ-03, QUIZ-04
@@ -327,13 +367,13 @@
 
 ---
 
-## Phase 15: Quiz Grading
+## Phase 17: Quiz Grading
 
 **Goal:** Objective questions auto-grade; essays enter manual grading queue
 
 **UI hint**: yes
 
-**Depends on:** Phase 14
+**Depends on:** Phase 16
 
 **Requirements:**
 - QUIZ-05, QUIZ-06
@@ -347,7 +387,7 @@
 
 ---
 
-## Phase 16: Discussion Board
+## Phase 18: Discussion Board
 
 **Goal:** Courses have threaded discussion boards with nested replies and moderation
 
@@ -368,13 +408,13 @@
 
 ---
 
-## Phase 17: Notifications & Calendar
+## Phase 19: Notifications & Calendar
 
 **Goal:** Users receive in-app notifications and see upcoming deadlines on a calendar
 
 **UI hint**: yes
 
-**Depends on:** Phase 9, Phase 10
+**Depends on:** Phase 11, Phase 12
 
 **Requirements:**
 - COMM-04, COMM-05, COMM-06
@@ -389,7 +429,7 @@
 
 ---
 
-## Phase 18: Audit & Security
+## Phase 20: Audit & Security
 
 **Goal:** All significant user actions are logged with a filterable audit trail
 
@@ -409,13 +449,13 @@
 
 ---
 
-## Phase 19: Analytics Pipeline
+## Phase 21: Analytics Pipeline
 
 **Goal:** Domain events stored in ClickHouse with materialized views for analysis
 
 **UI hint**: yes
 
-**Depends on:** Phase 18
+**Depends on:** Phase 20
 
 **Requirements:**
 - ANLT-01, ANLT-02, ANLT-03
@@ -432,13 +472,13 @@
 
 ---
 
-## Phase 20: Automation Engine
+## Phase 22: Automation Engine
 
 **Goal:** Instructors can define rules that auto-respond to student behavior
 
 **UI hint**: yes
 
-**Depends on:** Phase 19
+**Depends on:** Phase 21
 
 **Requirements:**
 - AUTO-01, AUTO-02, AUTO-03
@@ -465,15 +505,15 @@
 | AUTH | 5 | 2, 3, 4 |
 | ROLE | 5 | 3, 5, 6 |
 | FILE | 3 | 7 |
-| CRSE | 6 | 8, 9 |
-| ASGN | 6 | 10, 11 |
-| GRAD | 3 | 12 |
-| QUIZ | 6 | 13, 14, 15 |
-| COMM | 6 | 16, 17 |
-| AUDT | 2 | 18 |
-| ANLT | 3 | 19 |
-| AUTO | 3 | 20 |
+| CRSE | 6 | 8, 9, 10, 11 |
+| ASGN | 6 | 12, 13 |
+| GRAD | 3 | 14 |
+| QUIZ | 6 | 15, 16, 17 |
+| COMM | 6 | 18, 19 |
+| AUDT | 2 | 20 |
+| ANLT | 3 | 21 |
+| AUTO | 3 | 22 |
 
 ---
 *Roadmap created: 2026-04-14*
-*Last updated: 2026-04-14 after splitting Phase 3 into Session Management + User Profile (20 phases)*
+*Last updated: 2026-04-14 after splitting Course Management into Admin/Instructor/Student (22 phases)*
