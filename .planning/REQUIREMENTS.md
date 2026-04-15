@@ -135,53 +135,53 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | AUTH-01 | Phase 2 | Pending |
-| AUTH-02 | Phase 3 | Pending |
-| AUTH-03 | Phase 4 | Pending |
-| AUTH-04 | Phase 5 | Pending |
-| ROLE-01 | Phase 5 | Pending |
-| AUTH-05 | Phase 6 | Pending |
-| ROLE-02 | Phase 7 | Pending |
-| ROLE-03 | Phase 8 | Pending |
-| ROLE-04 | Phase 9 | Pending |
-| ROLE-05 | Phase 9 | Pending |
-| FILE-01 | Phase 10 | Pending |
-| FILE-02 | Phase 10 | Pending |
-| FILE-03 | Phase 10 | Pending |
-| CRSE-01 | Phase 11 | Pending |
-| CRSE-04 | Phase 12 | Pending |
-| CRSE-02 | Phase 13 | Pending |
-| CRSE-03 | Phase 14 | Pending |
-| CRSE-05 | Phase 15 | Pending |
-| CRSE-06 | Phase 16 | Pending |
-| ASGN-01 | Phase 17 | Pending |
-| ASGN-03 | Phase 17 | Pending |
-| ASGN-02 | Phase 18 | Pending |
-| ASGN-04 | Phase 19 | Pending |
-| ASGN-05 | Phase 20 | Pending |
-| ASGN-06 | Phase 21 | Pending |
-| GRAD-01 | Phase 22 | Pending |
-| GRAD-02 | Phase 22 | Pending |
-| GRAD-03 | Phase 23 | Pending |
-| QUIZ-01 | Phase 24 | Pending |
-| QUIZ-02 | Phase 25 | Pending |
-| QUIZ-03 | Phase 26 | Pending |
-| QUIZ-04 | Phase 27 | Pending |
-| QUIZ-05 | Phase 28 | Pending |
-| QUIZ-06 | Phase 29 | Pending |
-| COMM-01 | Phase 30 | Pending |
-| COMM-02 | Phase 30 | Pending |
-| COMM-03 | Phase 30 | Pending |
-| COMM-04 | Phase 31 | Pending |
-| COMM-05 | Phase 31 | Pending |
-| COMM-06 | Phase 32 | Pending |
-| AUDT-01 | Phase 33 | Pending |
-| AUDT-02 | Phase 33 | Pending |
-| ANLT-01 | Phase 34 | Pending |
-| ANLT-02 | Phase 35 | Pending |
-| ANLT-03 | Phase 35 | Pending |
-| AUTO-01 | Phase 36 | Pending |
-| AUTO-02 | Phase 36 | Pending |
-| AUTO-03 | Phase 36 | Pending |
+| AUTH-02 | Phase 2 | Pending |
+| AUTH-03 | Phase 2 | Pending |
+| AUTH-04 | Phase 2 | Pending |
+| AUTH-05 | Phase 2 | Pending |
+| ROLE-01 | Phase 2 | Pending |
+| ROLE-02 | Phase 3 | Pending |
+| ROLE-03 | Phase 3 | Pending |
+| ROLE-04 | Phase 4 | Pending |
+| ROLE-05 | Phase 4 | Pending |
+| FILE-01 | Phase 5 | Pending |
+| FILE-02 | Phase 5 | Pending |
+| FILE-03 | Phase 5 | Pending |
+| CRSE-01 | Phase 6 | Pending |
+| CRSE-02 | Phase 6 | Pending |
+| CRSE-03 | Phase 6 | Pending |
+| CRSE-04 | Phase 6 | Pending |
+| CRSE-05 | Phase 7 | Pending |
+| CRSE-06 | Phase 7 | Pending |
+| ASGN-01 | Phase 8 | Pending |
+| ASGN-02 | Phase 8 | Pending |
+| ASGN-03 | Phase 8 | Pending |
+| ASGN-04 | Phase 8 | Pending |
+| ASGN-05 | Phase 8 | Pending |
+| ASGN-06 | Phase 8 | Pending |
+| GRAD-01 | Phase 9 | Pending |
+| GRAD-02 | Phase 9 | Pending |
+| GRAD-03 | Phase 9 | Pending |
+| QUIZ-01 | Phase 10 | Pending |
+| QUIZ-02 | Phase 10 | Pending |
+| QUIZ-03 | Phase 11 | Pending |
+| QUIZ-04 | Phase 11 | Pending |
+| QUIZ-05 | Phase 11 | Pending |
+| QUIZ-06 | Phase 11 | Pending |
+| COMM-01 | Phase 12 | Pending |
+| COMM-02 | Phase 12 | Pending |
+| COMM-03 | Phase 12 | Pending |
+| COMM-04 | Phase 13 | Pending |
+| COMM-05 | Phase 13 | Pending |
+| COMM-06 | Phase 13 | Pending |
+| AUDT-01 | Phase 14 | Pending |
+| AUDT-02 | Phase 14 | Pending |
+| ANLT-01 | Phase 14 | Pending |
+| ANLT-02 | Phase 14 | Pending |
+| ANLT-03 | Phase 14 | Pending |
+| AUTO-01 | Phase 15 | Pending |
+| AUTO-02 | Phase 15 | Pending |
+| AUTO-03 | Phase 15 | Pending |
 
 **Coverage:**
 - v1 requirements: 48 total
@@ -190,4 +190,4 @@
 
 ---
 *Requirements defined: 2026-04-14*
-*Last updated: 2026-04-15 after splitting to 1 requirement per phase (36 phases)*
+*Last updated: 2026-04-15 after consolidating to 15 phases*
