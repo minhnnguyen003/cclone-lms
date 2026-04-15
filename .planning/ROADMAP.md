@@ -2,7 +2,7 @@
 
 **Created:** 2026-04-14
 **Milestone:** v1.0
-**Phases:** 15
+**Phases:** 14
 **Requirements:** 48 mapped
 
 ## Phase Overview
@@ -11,19 +11,18 @@
 |---|-------|------|--------------|-------|
 | 1 | Project Scaffolding + DB Setup | NestJS project, Prisma, Docker Compose, and dev tooling are configured and running | (infrastructure) | TBD |
 | 2 | Authentication | Users can sign up, log in, stay logged in, log out, and edit their profile | AUTH-01..05, ROLE-01 (6) | TBD |
-| 3 | Roles & Permissions | Admin can assign roles and resource-level authorization is enforced via CASL | ROLE-02, ROLE-03 (2) | TBD |
-| 4 | Multi-tenancy & Isolation | Tenant data isolated via PostgreSQL RLS and privilege escalation prevented | ROLE-04, ROLE-05 (2) | TBD |
-| 5 | File Management | Files upload to MinIO with validation and signed URL access | FILE-01, FILE-02, FILE-03 (3) | TBD |
-| 6 | Course Management | Admin can create courses and enroll students, instructors can manage courses, students can browse | CRSE-01..04 (4) | TBD |
-| 7 | Course Dashboard & Content | Course dashboard shows enrolled users and instructors can create content pages | CRSE-05, CRSE-06 (2) | TBD |
-| 8 | Assignments | Instructors create assignments, students submit, instructors grade with comments and feedback | ASGN-01..06 (6) | TBD |
-| 9 | Gradebook | Instructors and students can view grades with weighted categories | GRAD-01, GRAD-02, GRAD-03 (3) | TBD |
-| 10 | Quiz Creation & Config | Instructors create quizzes with multiple question types and configure settings | QUIZ-01, QUIZ-02 (2) | TBD |
-| 11 | Quiz Taking & Grading | Students take timed quizzes with auto-save; objective auto-graded, essays enter grading queue | QUIZ-03..06 (4) | TBD |
-| 12 | Discussion Board | Courses have threaded discussion boards with nested replies and moderation | COMM-01, COMM-02, COMM-03 (3) | TBD |
-| 13 | Notifications & Calendar | In-app notifications with preferences and calendar view for due dates | COMM-04, COMM-05, COMM-06 (3) | TBD |
-| 14 | Audit & Analytics | User actions logged with audit trail; events stored in ClickHouse with analytics views | AUDT-01, AUDT-02, ANLT-01, ANLT-02, ANLT-03 (5) | TBD |
-| 15 | Automation Engine | Instructors can define rules that auto-respond to student behavior | AUTO-01, AUTO-02, AUTO-03 (3) | TBD |
+| 3 | Access Control | Admin assigns roles, CASL enforces resource access, RLS isolates tenant data | ROLE-02..05 (4) | TBD |
+| 4 | File Management | Files upload to MinIO with validation and signed URL access | FILE-01, FILE-02, FILE-03 (3) | TBD |
+| 5 | Course Management | Admin can create courses and enroll students, instructors can manage courses, students can browse | CRSE-01..04 (4) | TBD |
+| 6 | Course Dashboard & Content | Course dashboard shows enrolled users and instructors can create content pages | CRSE-05, CRSE-06 (2) | TBD |
+| 7 | Assignments | Instructors create assignments, students submit, instructors grade with comments and feedback | ASGN-01..06 (6) | TBD |
+| 8 | Gradebook | Instructors and students can view grades with weighted categories | GRAD-01, GRAD-02, GRAD-03 (3) | TBD |
+| 9 | Quiz Creation & Config | Instructors create quizzes with multiple question types and configure settings | QUIZ-01, QUIZ-02 (2) | TBD |
+| 10 | Quiz Taking & Grading | Students take timed quizzes with auto-save; objective auto-graded, essays enter grading queue | QUIZ-03..06 (4) | TBD |
+| 11 | Discussion Board | Courses have threaded discussion boards with nested replies and moderation | COMM-01, COMM-02, COMM-03 (3) | TBD |
+| 12 | Notifications & Calendar | In-app notifications with preferences and calendar view for due dates | COMM-04, COMM-05, COMM-06 (3) | TBD |
+| 13 | Audit & Analytics | User actions logged with audit trail; events stored in ClickHouse with analytics views | AUDT-01, AUDT-02, ANLT-01, ANLT-02, ANLT-03 (5) | TBD |
+| 14 | Automation Engine | Instructors can define rules that auto-respond to student behavior | AUTO-01, AUTO-02, AUTO-03 (3) | TBD |
 
 ---
 
@@ -75,50 +74,33 @@
 
 ---
 
-## Phase 3: Roles & Permissions
+## Phase 3: Access Control
 
-**Goal:** Admin can assign roles and resource-level authorization is enforced via CASL
+**Goal:** Admin assigns roles, CASL enforces resource access, RLS isolates tenant data
 
 **UI hint**: yes
 
 **Depends on:** Phase 2
 
 **Requirements:**
-- ROLE-02, ROLE-03
+- ROLE-02, ROLE-03, ROLE-04, ROLE-05
 
 **Success Criteria:**
 1. Admin can assign roles to users via API and UI
 2. Resource-level authorization enforced via CASL — users can only access resources they own or are enrolled in
 3. Permission guards integrated into NestJS route handlers
+4. Multi-tenant isolation enforced via PostgreSQL RLS — tenant data never exposed across boundaries
+5. Horizontal privilege escalation prevented (student cannot access another student's submissions)
+6. All existing queries respect tenant context automatically
 
 **Research flags:**
 - CASL v6 + Prisma v7 integration (validate `@casl/prisma` compatibility)
-
----
-
-## Phase 4: Multi-tenancy & Isolation
-
-**Goal:** Tenant data isolated via PostgreSQL RLS and privilege escalation prevented
-
-**UI hint**: no
-
-**Depends on:** Phase 3
-
-**Requirements:**
-- ROLE-04, ROLE-05
-
-**Success Criteria:**
-1. Multi-tenant isolation enforced via PostgreSQL RLS — tenant data never exposed across boundaries
-2. Horizontal privilege escalation prevented (student cannot access another student's submissions)
-3. All existing queries respect tenant context automatically
-
-**Research flags:**
 - Multi-tenancy with Prisma v7 + RLS (newer combo, validate compatibility)
 - Platform admin vs tenant admin data model separation
 
 ---
 
-## Phase 5: File Management
+## Phase 4: File Management
 
 **Goal:** Files upload to MinIO with validation and signed URL access
 
@@ -139,13 +121,13 @@
 
 ---
 
-## Phase 6: Course Management
+## Phase 5: Course Management
 
 **Goal:** Admin can create courses and enroll students, instructors can manage courses, students can browse
 
 **UI hint**: yes
 
-**Depends on:** Phase 3, Phase 4
+**Depends on:** Phase 3
 
 **Requirements:**
 - CRSE-01, CRSE-02, CRSE-03, CRSE-04
@@ -161,13 +143,13 @@
 
 ---
 
-## Phase 7: Course Dashboard & Content
+## Phase 6: Course Dashboard & Content
 
 **Goal:** Course dashboard shows enrolled users and instructors can create content pages
 
 **UI hint**: yes
 
-**Depends on:** Phase 6
+**Depends on:** Phase 5
 
 **Requirements:**
 - CRSE-05, CRSE-06
@@ -181,13 +163,13 @@
 
 ---
 
-## Phase 8: Assignments
+## Phase 7: Assignments
 
 **Goal:** Instructors create assignments, students submit, instructors grade with comments and feedback
 
 **UI hint**: yes
 
-**Depends on:** Phase 5, Phase 7
+**Depends on:** Phase 4, Phase 6
 
 **Requirements:**
 - ASGN-01, ASGN-02, ASGN-03, ASGN-04, ASGN-05, ASGN-06
@@ -205,13 +187,13 @@
 
 ---
 
-## Phase 9: Gradebook
+## Phase 8: Gradebook
 
 **Goal:** Instructors and students can view grades with weighted categories
 
 **UI hint**: yes
 
-**Depends on:** Phase 8
+**Depends on:** Phase 7
 
 **Requirements:**
 - GRAD-01, GRAD-02, GRAD-03
@@ -226,13 +208,13 @@
 
 ---
 
-## Phase 10: Quiz Creation & Config
+## Phase 9: Quiz Creation & Config
 
 **Goal:** Instructors create quizzes with multiple question types and configure settings
 
 **UI hint**: yes
 
-**Depends on:** Phase 7
+**Depends on:** Phase 6
 
 **Requirements:**
 - QUIZ-01, QUIZ-02
@@ -246,13 +228,13 @@
 
 ---
 
-## Phase 11: Quiz Taking & Grading
+## Phase 10: Quiz Taking & Grading
 
 **Goal:** Students take timed quizzes with auto-save; objective auto-graded, essays enter grading queue
 
 **UI hint**: yes
 
-**Depends on:** Phase 10
+**Depends on:** Phase 9
 
 **Requirements:**
 - QUIZ-03, QUIZ-04, QUIZ-05, QUIZ-06
@@ -269,13 +251,13 @@
 
 ---
 
-## Phase 12: Discussion Board
+## Phase 11: Discussion Board
 
 **Goal:** Courses have threaded discussion boards with nested replies and moderation
 
 **UI hint**: yes
 
-**Depends on:** Phase 6
+**Depends on:** Phase 5
 
 **Requirements:**
 - COMM-01, COMM-02, COMM-03
@@ -290,13 +272,13 @@
 
 ---
 
-## Phase 13: Notifications & Calendar
+## Phase 12: Notifications & Calendar
 
 **Goal:** In-app notifications with preferences and calendar view for due dates
 
 **UI hint**: yes
 
-**Depends on:** Phase 7, Phase 8
+**Depends on:** Phase 6, Phase 7
 
 **Requirements:**
 - COMM-04, COMM-05, COMM-06
@@ -311,13 +293,13 @@
 
 ---
 
-## Phase 14: Audit & Analytics
+## Phase 13: Audit & Analytics
 
 **Goal:** User actions logged with audit trail; events stored in ClickHouse with analytics views
 
 **UI hint**: yes
 
-**Depends on:** Phase 4
+**Depends on:** Phase 3
 
 **Requirements:**
 - AUDT-01, AUDT-02, ANLT-01, ANLT-02, ANLT-03
@@ -336,13 +318,13 @@
 
 ---
 
-## Phase 15: Automation Engine
+## Phase 14: Automation Engine
 
 **Goal:** Instructors can define rules that auto-respond to student behavior
 
 **UI hint**: yes
 
-**Depends on:** Phase 14
+**Depends on:** Phase 13
 
 **Requirements:**
 - AUTO-01, AUTO-02, AUTO-03
@@ -367,17 +349,17 @@
 | Category | Count | Phase(s) |
 |----------|-------|----------|
 | AUTH | 5 | 2 |
-| ROLE | 5 | 2, 3, 4 |
-| FILE | 3 | 5 |
-| CRSE | 6 | 6, 7 |
-| ASGN | 6 | 8 |
-| GRAD | 3 | 9 |
-| QUIZ | 6 | 10, 11 |
-| COMM | 6 | 12, 13 |
-| AUDT | 2 | 14 |
-| ANLT | 3 | 14 |
-| AUTO | 3 | 15 |
+| ROLE | 5 | 2, 3 |
+| FILE | 3 | 4 |
+| CRSE | 6 | 5, 6 |
+| ASGN | 6 | 7 |
+| GRAD | 3 | 8 |
+| QUIZ | 6 | 9, 10 |
+| COMM | 6 | 11, 12 |
+| AUDT | 2 | 13 |
+| ANLT | 3 | 13 |
+| AUTO | 3 | 14 |
 
 ---
 *Roadmap created: 2026-04-14*
-*Last updated: 2026-04-15 after consolidating to 15 phases*
+*Last updated: 2026-04-15 after merging Roles & Permissions + Multi-tenancy into Access Control (14 phases)*
