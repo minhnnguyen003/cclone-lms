@@ -6,9 +6,9 @@
 <domain>
 ## Phase Boundary
 
-This phase delivers the complete identity layer: sign-up, login, persistent sessions via refresh token rotation, logout with invalidation, and basic profile editing (name + password). The User model and Role enum already exist in the DB from Phase 1.
+This phase delivers the complete identity layer: sign-up, login, persistent sessions via refresh token rotation, logout with invalidation, and basic profile editing (display name + timezone). The User model and Role enum already exist in the DB from Phase 1.
 
-What's NOT in scope: role assignment UI (Phase 3), file upload for avatars (Phase 4), email change flow, email notifications, OAuth/SSO.
+What's NOT in scope: password change UI (later phase), role assignment UI (Phase 3), file upload for avatars (Phase 4), email change flow, email verification, OAuth/SSO, dark mode.
 
 </domain>
 
@@ -16,40 +16,94 @@ What's NOT in scope: role assignment UI (Phase 3), file upload for avatars (Phas
 ## Implementation Decisions
 
 ### Token & Session Strategy
-*(Industry best practice — Claude's discretion, not discussed interactively)*
 - **D-01:** Access token TTL: **15 minutes**, stored in **Zustand memory store only** (never localStorage, never sessionStorage — XSS-proof)
-- **D-02:** Refresh token: **7-day sliding window**, stored in **httpOnly, Secure, SameSite=Strict cookie** — inaccessible to JavaScript
-- **D-03:** Silent refresh via **axios response interceptor**: on 401, attempt `/auth/refresh` before retrying original request. If refresh fails, clear store and redirect to `/login`
+- **D-02:** Refresh token: **30-day fixed**, stored in **httpOnly, Secure, SameSite=Strict cookie** — inaccessible to JavaScript
+- **D-03:** Silent refresh via **axios response interceptor**: on 401, attempt `/auth/refresh` before retrying original request. If refresh fails, clear Zustand store and redirect to `/login`
 - **D-04:** Logout: DELETE `/auth/logout` endpoint — clears the httpOnly cookie server-side AND adds the refresh token to a **Redis blacklist** (TTL = remaining token lifetime). All subsequent refresh attempts with that token are rejected.
 - **D-05:** Refresh token rotation: each `/auth/refresh` call issues a **new refresh token** and invalidates the old one (single-use tokens prevent theft reuse)
 
-### Registration Flow
-*(Not discussed — reasonable defaults applied)*
-- **D-06:** **Open self-registration** — anyone with an email can sign up via `/auth/signup`
-- **D-07:** Default role on self-registration: **STUDENT**. Role changes are an admin action (Phase 3).
-- **D-08:** Email uniqueness enforced at DB level (already in schema) + returns a clear 409 error on duplicate
+### Registration & Default Role
+- **D-06:** **Open self-registration** — anyone with an email can sign up via `/auth/signup`. No invite required.
+- **D-07:** **No email verification** — immediate access after signup. Email flows are v2 scope.
+- **D-08:** Default role on self-registration: **STUDENT**. Role changes are an admin action (Phase 3).
+- **D-09:** Email uniqueness enforced at DB level (already in schema) + returns a clear 409 error on duplicate.
+- **D-10:** Signup form collects: **email + password + display name** (all three required).
+- **D-11:** Password policy:
+  - Minimum 8 characters
+  - At least 1 uppercase letter
+  - At least 1 number
+  - At least 1 symbol
+  - No sequential digit runs of 3+ (e.g. `123`, `456`, `987`)
+  - No repeating same digit 3+ times in a row (e.g. `111`, `aaa`)
 
-### Frontend Auth Pages
-- **D-09:** **Dedicated full-page routes**: `/login` and `/signup` — not modals. Standard LMS pattern, deep-linkable, unauthenticated users are redirected here.
-- **D-10:** **Post-login redirect to intended destination**: if the user was trying to access `/courses/123`, they are sent to `/login?next=%2Fcourses%2F123` and redirected back after successful login. Falls back to `/dashboard` if no `next` param.
-- **D-11:** **Unauthenticated route protection**: a `<PrivateRoute>` (or `<RequireAuth>`) wrapper reads auth state from Zustand; if not authenticated, redirects to `/login?next={currentPath}`
-
-### App Shell
-- **D-12:** **Full sidebar nav skeleton** built in Phase 2 — even with placeholder links. The sidebar contains: logo, nav items (Dashboard, Courses, Assignments, Gradebook — all placeholder links for now), and a bottom section with user avatar + name + logout button. This gives Phase 2 a finished feel and avoids rebuilding the shell in every subsequent phase.
-- **D-13:** Sidebar is part of a persistent `<AppLayout>` wrapper that wraps all authenticated routes. Unauthenticated routes (`/login`, `/signup`) use a plain `<AuthLayout>` (centered card, no sidebar).
+### Frontend Auth Pages & Shell
+- **D-12:** Auth layout: **centered card on plain background**. If an institution logo exists, show it above the form card; otherwise just center the form. Uses `<AuthLayout>` wrapper.
+- **D-13:** Password field on signup: **real-time validation checklist** — each policy condition displays with a ✓ (green) or ✗ (red) icon updating as the user types. All conditions listed explicitly.
+- **D-14:** First input auto-focused on page load with **visible focus ring** (accessible, not suppressed).
+- **D-15:** Auth errors: **inline under the relevant form field** for validation errors. Server errors (wrong password, email taken) shown as a **banner above the form**.
+- **D-16:** App shell scope in Phase 2: **minimal** — sidebar contains logo, user avatar + name (initials placeholder), and logout button only. Nav items (Dashboard, Courses, etc.) are added by each subsequent phase as they build out.
+- **D-17:** Unauthenticated route protection: `<RequireAuth>` wrapper redirects to `/login?next={encodedPath}`. After login, user is sent to the `next` destination. Falls back to `/dashboard` if no `next` param.
+- **D-18:** Initial auth load state: **full-screen spinner** while refresh token is being validated. No flash of wrong content.
 
 ### Profile Page
-- **D-14:** Profile page (`/profile`) is accessible from sidebar / user menu
-- **D-15:** Editable fields: **display name** and **password change** (requires current password for verification)
-- **D-16:** Email is **read-only** on profile — shown but not editable in Phase 2
-- **D-17:** Avatar: **initials placeholder** — a colored circle generated from the user's name initials (e.g., "Minh Nguyen" → "MN"). No file upload (Phase 4). Color derived deterministically from user ID.
+- **D-19:** Profile page (`/profile`) accessible from user section in sidebar.
+- **D-20:** Editable fields: **display name** and **timezone**. Email is read-only.
+- **D-21:** Password change: **deferred** to a later phase.
+- **D-22:** Avatar: **initials placeholder** — a colored circle generated from the user's name initials (e.g. "Minh Nguyen" → "MN"). Color derived deterministically from user ID hash, using role-hinted palette.
+
+### Design System
+- **D-23:** Icon library: **Lucide React** (tree-shakeable, TypeScript-first, line-art style).
+- **D-24:** Dark mode: **deferred**. Build light palette only in Phase 2.
+- **D-25:** Color palette (authoritative — all components must use these tokens):
+
+  **Primary (Brand — Indigo)**
+  - `#4F46E5` (primary-500) — main actions, links, highlights
+  - `#4338CA` (primary-600) — hover state
+  - `#E0E7FF` (primary-100) — background highlight
+
+  **Secondary (Cyan)**
+  - `#06B6D4` (secondary-500) — secondary buttons, selected filters
+  - `#CFFAFE` (secondary-100)
+
+  **Neutral Foundation**
+  - App background: `#F9FAFB`
+  - Card background: `#FFFFFF`
+  - Sidebar: `#111827` (dark sidebar)
+  - Text primary: `#111827`
+  - Text secondary: `#6B7280`
+  - Text disabled: `#9CA3AF`
+  - Border default: `#E5E7EB`
+  - Border strong: `#D1D5DB`
+
+  **Semantic Colors**
+  - Success: `#10B981` / light `#D1FAE5` — submitted assignments, passed grades
+  - Warning: `#F59E0B` / light `#FEF3C7` — upcoming deadlines, draft states
+  - Error: `#EF4444` / light `#FEE2E2` — missing assignments, validation errors
+  - Info: `#3B82F6` / light `#DBEAFE` — neutral system messages
+
+  **LMS Status → Color Mapping**
+  | Status      | Color              | Hex       |
+  |-------------|-------------------|-----------|
+  | Not Started | Gray              | `#9CA3AF` |
+  | In Progress | Blue              | `#3B82F6` |
+  | Submitted   | Green             | `#10B981` |
+  | Graded      | Indigo            | `#4F46E5` |
+  | Late        | Red               | `#EF4444` |
+
+  **Role-Based Accent Colors** (avatar ring, small badges, sidebar indicator — subtle use only)
+  | Role       | Color   | Hex       |
+  |------------|---------|-----------|
+  | Student    | Indigo  | `#4F46E5` |
+  | Instructor | Emerald | `#059669` |
+  | Admin      | Purple  | `#7C3AED` |
 
 ### Claude's Discretion
-- Exact sidebar nav item labels and icons (use sensible defaults from Heroicons or Lucide)
+- Exact sidebar height, padding, logo treatment details
 - Form validation error message copy
-- Loading spinner / skeleton approach on auth transitions
-- Exact color for initials avatar (deterministic from user ID hash)
+- Loading spinner animation style
+- Exact color mapping for initials avatar (use role-hinted palette above, deterministic from user ID hash)
 - Whether to use React Router `<Outlet>` or explicit wrapper components for layouts
+- Timezone picker UI component choice (react-select, native select, or similar)
 
 </decisions>
 
@@ -102,9 +156,12 @@ No external ADRs or specs — all decisions captured above.
 <specifics>
 ## Specific Ideas
 
-- Sidebar nav skeleton should feel "real" — use actual route paths and icons even if pages are placeholders. This sets up the routing structure that later phases fill in.
+- Auth pages: if no institution logo exists, center the form card with no branding header. When a logo is eventually added, it slots in above the card without restructuring.
+- Password checklist on signup form: show all 6 conditions listed at all times; each turns green (✓) as the condition is met in real time. Conditions: min 8 chars, 1 uppercase, 1 number, 1 symbol, no 3+ sequential digits, no 3+ repeating same character.
+- First input auto-focus: both `/login` (email field) and `/signup` (display name or email — whichever is first) should auto-focus on mount, with a visible Tailwind `ring` focus style (not `outline: none`).
 - The `?next=` redirect param should be URL-encoded to handle deep paths like `/courses/123/assignments/456`
-- Initials avatar color should be **deterministic** (same color every time for same user) — derive from a hash of the user ID mapped to a small palette of brand-consistent colors
+- Initials avatar: use the role-based accent color table (D-25) mapped deterministically from user ID — students get indigo ring, instructors get emerald, admins get purple.
+- Sidebar in Phase 2: just logo + user block + logout. The empty space below the logo is intentional — future nav items fill it in. Avoid adding placeholder nav items that future phases will need to re-wire.
 
 </specifics>
 
@@ -112,10 +169,12 @@ No external ADRs or specs — all decisions captured above.
 ## Deferred Ideas
 
 - Avatar file upload — deferred to Phase 4 (File Management)
-- Email change flow — deferred (requires email verification, out of scope for Phase 2)
-- OAuth / SSO (Google, GitHub) — not in requirements, defer indefinitely
-- "Remember me" checkbox — refresh token is already 7 days; no separate remember-me needed
-- Two-factor authentication — not in v1 requirements
+- Password change UI — deferred to a later phase
+- Email change flow — requires email verification, out of scope for Phase 2
+- OAuth / SSO (Google, GitHub) — v2 requirements (AUTH-V2-01), not v1
+- Two-factor authentication — v2 requirements (AUTH-V2-03)
+- Dark mode — deferred; light palette only in Phase 2
+- Email verification on signup — v2 scope
 
 </deferred>
 
