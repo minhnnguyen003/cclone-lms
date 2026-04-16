@@ -16,6 +16,7 @@ model User {
   password   String
   name       String?
   role       Role      @default(STUDENT)
+  timezone   String    @default("UTC")
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
