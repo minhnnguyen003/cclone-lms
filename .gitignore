@@ -26,3 +26,15 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Turborepo
+.turbo/
+
+# Test coverage
+coverage/
+
+# Generated code
+apps/backend/src/generated/
+
+# Local files
+*.local
