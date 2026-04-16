@@ -9,7 +9,7 @@
 
 | # | Phase | Goal | Requirements | Plans |
 |---|-------|------|--------------|-------|
-| 1 | Project Scaffolding + DB Setup | NestJS project, Prisma, Docker Compose, and dev tooling are configured and running | (infrastructure) | TBD |
+| 1 | Project Scaffolding + DB Setup | NestJS project, Prisma, Docker Compose, and dev tooling are configured and running | (infrastructure) | 3 plans |
 | 2 | Authentication | Users can sign up, log in, stay logged in, log out, and edit their profile | AUTH-01..05, ROLE-01 (6) | TBD |
 | 3 | Access Control | Admin assigns roles, CASL enforces resource access, RLS isolates tenant data | ROLE-02..05 (4) | TBD |
 | 4 | File Management | Files upload to MinIO with validation and signed URL access | FILE-01, FILE-02, FILE-03 (3) | TBD |
@@ -36,6 +36,13 @@
 
 **Requirements:**
 - (Infrastructure phase — no functional requirements)
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Monorepo skeleton (pnpm + Turborepo + Docker Compose + env config)
+- [ ] 01-02-PLAN.md — NestJS backend with Prisma + React frontend + shared types package
+- [ ] 01-03-PLAN.md — Dev tooling (ESLint, Prettier, husky, lint-staged) + test infrastructure
 
 **Success Criteria:**
 1. NestJS project initializes and starts without errors
@@ -362,4 +369,4 @@
 
 ---
 *Roadmap created: 2026-04-14*
-*Last updated: 2026-04-15 after merging Roles & Permissions + Multi-tenancy into Access Control (14 phases)*
+*Last updated: 2026-04-16 after planning Phase 1 (3 plans)*
