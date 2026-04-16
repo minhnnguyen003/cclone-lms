@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: false
 preset: none
 created: 2026-04-16
+updated: 2026-04-16
 ---
 
 # Phase 2 — UI Design Contract
@@ -20,29 +21,49 @@ created: 2026-04-16
 | Property | Value |
 |----------|-------|
 | Tool | shadcn/ui (to be initialized — first task in PLAN.md) |
-| Preset | Standard init: primary = indigo, font = Inter |
+| Preset | Standard init: style = Default, base color = Indigo |
 | Component library | Radix UI (via shadcn/ui) |
-| Icon library | Lucide React |
+| Icon library | Lucide React (`lucide-react` package) |
 | Font | Inter — loaded via `@fontsource/inter` (avoids network dependency on Google Fonts) |
-| CSS framework | TailwindCSS v4 (CSS-first config, `@import "tailwindcss"` already in `index.css`) |
+| CSS framework | TailwindCSS v4.2 (CSS-first, `@tailwindcss/vite` plugin, `@import "tailwindcss"` in `index.css`) |
 
 > Note: `components.json` does not yet exist. The executor's first task must run `npx shadcn init` with the configuration below before implementing any component. Confirm `components.json` exists before proceeding to any other UI task.
 
 ### shadcn Init Configuration
 
-When running `npx shadcn init`, use these values:
+When running `npx shadcn@latest init`, use these values:
 
 | Prompt | Value |
 |--------|-------|
 | Style | Default |
 | Base color | Indigo |
 | CSS variables | Yes |
-| tailwind.config location | Not applicable (TailwindCSS v4 — no config file) |
+| React Server Components | No |
 | Components directory | `apps/frontend/src/components/ui` |
 | Utils directory | `apps/frontend/src/lib/utils.ts` |
-| React Server Components | No |
 
-> TailwindCSS v4 note: shadcn's init may attempt to modify `tailwind.config.js`. Since this project uses v4 (CSS-first, no config file), the executor must apply any token additions directly in `apps/frontend/src/index.css` using `@theme` blocks instead. See Color section below.
+> TailwindCSS v4 note: shadcn v2+ detects TailwindCSS v4 automatically and writes tokens into `index.css` via `@theme` blocks instead of `tailwind.config.js`. No manual config file handling is needed. Verify that shadcn appended `@theme { ... }` to `apps/frontend/src/index.css` after init.
+
+### Additional Packages to Install
+
+Run after `shadcn init`:
+
+```
+pnpm --filter frontend add lucide-react @fontsource/inter
+```
+
+Import in `apps/frontend/src/main.tsx`:
+
+```ts
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/600.css';
+```
+
+### Phase 1 Status (Confirmed)
+
+- `@/` alias: working — `vite.config.ts` maps `@` → `./src`
+- `index.css`: contains `@import "tailwindcss"` — TailwindCSS v4 active
+- `App.tsx`: bare scaffold using `createBrowserRouter` from `react-router` — safe to replace routing structure
 
 ---
 
@@ -81,7 +102,7 @@ All type uses Inter. Loaded via `@fontsource/inter/400.css` and `@fontsource/int
 
 Type scale contains exactly 4 sizes: 12px / 14px / 20px / 28px. Two weights only: 400 (Regular) and 600 (Semibold).
 
-Additional weight declarations within the 14px size:
+Additional declarations within the 14px body size:
 
 - Button text: 14px, weight 600 (Semibold), letter-spacing 0
 - Sidebar logo text: 14px, weight 600 (Semibold)
@@ -91,7 +112,7 @@ Additional weight declarations within the 14px size:
 
 ## Color
 
-TailwindCSS v4 uses CSS custom properties via `@theme` blocks in `index.css`. shadcn/ui populates these automatically during init. The values below define the semantic intent — shadcn's indigo preset will supply the actual hex values.
+TailwindCSS v4 uses CSS custom properties via `@theme` blocks in `index.css`. shadcn/ui populates these automatically during init. The values below define the semantic intent — shadcn's indigo preset supplies the actual hex values.
 
 | Role | Tailwind Token | Semantic Usage |
 |------|---------------|----------------|
@@ -107,10 +128,10 @@ TailwindCSS v4 uses CSS custom properties via `@theme` blocks in `index.css`. sh
 
 The `primary` / indigo accent is used ONLY on these elements:
 
-1. Primary submit buttons: "Sign in", "Create account", "Save changes"
+1. Primary submit buttons: "Sign in", "Create account", "Save name", "Update password"
 2. Active sidebar nav item: left border indicator + icon color
 3. Focus ring on all interactive elements (`ring-primary` via shadcn default)
-4. Checkbox checked state on "Remember me" (if added in future)
+4. Auth layout logo icon (`GraduationCap`, `text-primary`)
 
 The accent is NOT used on: sidebar background, card borders, avatar backgrounds (uses palette, see InitialsAvatar below), body text, or secondary navigation.
 
@@ -121,6 +142,7 @@ The `destructive` token is used ONLY on:
 1. Logout button in sidebar bottom section (text color only, not background — `text-destructive` on a ghost variant)
 2. Form-level error alert (e.g., "Invalid email or password")
 3. Password mismatch error on signup
+4. Wrong current password error on profile
 
 ### InitialsAvatar Color Palette
 
@@ -143,6 +165,18 @@ Hash function: `charCodeSum(userId) % 8` where `charCodeSum` sums the char codes
 
 ## Component Inventory
 
+| # | Component | Route / Context | shadcn Primitives Used |
+|---|-----------|----------------|------------------------|
+| 1 | AuthLayout | `/login`, `/signup` | Card |
+| 2 | Login Page | `/login` | Input, Label, Button, Alert, Form |
+| 3 | Signup Page | `/signup` | Input, Label, Button, Alert, Form |
+| 4 | AppLayout + Sidebar | All authenticated routes | Separator |
+| 5 | Profile Page | `/profile` | Input, Label, Button, Alert, Card, Form, Toast/Sonner |
+| 6 | PrivateRoute | Router wrapper | None (logical) |
+| 7 | InitialsAvatar | Sidebar, Profile header | None (custom) |
+
+---
+
 ### 1. AuthLayout
 
 **Purpose:** Wrapper for unauthenticated routes (`/login`, `/signup`). No sidebar. Centered card on a muted page background.
@@ -150,9 +184,9 @@ Hash function: `charCodeSum(userId) % 8` where `charCodeSum` sums the char codes
 **Structure:**
 ```
 <div> (full-screen, bg-background, flex items-center justify-center, min-h-screen)
-  <div> (card, w-full max-w-[400px], p-xl (32px horizontal) py-2xl (48px vertical))
+  <Card> (w-full max-w-[400px], px-xl (32px) py-2xl (48px))
     <div> (logo area, mb-lg, text-center)
-      — LMS logo mark (Lucide `GraduationCap` icon, 32px, text-primary)
+      — Lucide GraduationCap icon (32px, text-primary)
       — App name: "CClone LMS" (14px, semibold)
     <div> (page title area, mb-lg)
       — h1: page-specific heading (20px, semibold)
@@ -179,10 +213,9 @@ Hash function: `charCodeSum(userId) % 8` where `charCodeSum` sums the char codes
 
 **Layout order (top to bottom inside card):**
 1. Email field with label "Email address"
-2. Password field with label "Password" + "Forgot password?" link right-aligned (14px, text-primary, disabled for Phase 2 — shown but leads to `/` with no-op)
-3. Primary button "Sign in" (full width, 44px height minimum)
-4. Divider line (optional, visual only)
-5. Footer: "Don't have an account? Sign up" — "Sign up" links to `/signup`
+2. Password field with label "Password" + "Forgot password?" link right-aligned (14px, text-primary, shown but leads to `#` as no-op for Phase 2)
+3. Primary button "Sign in" (full width, min-h-[44px])
+4. Footer: "Don't have an account? Sign up" — "Sign up" links to `/signup`
 
 **States:**
 
@@ -190,12 +223,12 @@ Hash function: `charCodeSum(userId) % 8` where `charCodeSum` sums the char codes
 |-------|-----------------|
 | Default | Standard shadcn Input appearance |
 | Focus | `ring-2 ring-primary` (shadcn default) |
-| Error (field) | `border-destructive`, error message in 12px `text-destructive` below field |
-| Error (form-level) | shadcn `Alert` with `variant="destructive"` above the form: "Invalid email or password. Please try again." |
+| Error (field) | `border-destructive`, error message 12px `text-destructive` below field |
+| Error (form-level) | shadcn `Alert variant="destructive"` above the form: "Invalid email or password. Please try again." |
 | Loading (submit) | Button shows Lucide `Loader2` icon spinning (16px), label hidden, button disabled |
 | Success | Redirect fires — no visual state needed |
 
-**Post-login redirect:** Read `?next` query param. If present and starts with `/`, redirect to that path. Otherwise redirect to `/dashboard`.
+**Post-login redirect:** Read `?next` query param. If present, starts with `/`, and does not contain `://`, redirect to decoded value. Otherwise redirect to `/dashboard`.
 
 ---
 
@@ -213,9 +246,9 @@ Hash function: `charCodeSum(userId) % 8` where `charCodeSum` sums the char codes
 **Layout order (top to bottom inside card):**
 1. Display name field with label "Full name"
 2. Email field with label "Email address"
-3. Password field with label "Password" + helper text: "Minimum 8 characters." (12px, muted-foreground)
+3. Password field with label "Password" + helper text "Minimum 8 characters." (12px, muted-foreground)
 4. Confirm password field with label "Confirm password"
-5. Primary button "Create account" (full width, 44px height minimum)
+5. Primary button "Create account" (full width, min-h-[44px])
 6. Footer: "Already have an account? Sign in" — "Sign in" links to `/login`
 
 **States:**
@@ -225,7 +258,7 @@ Hash function: `charCodeSum(userId) % 8` where `charCodeSum` sums the char codes
 | Default | Standard shadcn Input appearance |
 | Focus | `ring-2 ring-primary` (shadcn default) |
 | Error (field) | `border-destructive`, error message 12px `text-destructive` below field |
-| Error (duplicate email) | Form-level shadcn `Alert variant="destructive"`: "An account with this email already exists. Sign in instead?" — "Sign in" is an inline link to `/login` |
+| Error (duplicate email) | shadcn `Alert variant="destructive"` above form: "An account with this email already exists. Sign in instead?" — "Sign in" is an inline link to `/login` |
 | Loading (submit) | Button shows Lucide `Loader2` icon spinning (16px), label hidden, button disabled |
 | Success | Redirect to `/dashboard` (user is now logged in with returned tokens) |
 
@@ -233,7 +266,7 @@ Hash function: `charCodeSum(userId) % 8` where `charCodeSum` sums the char codes
 
 ### 4. AppLayout (authenticated shell)
 
-**Purpose:** Persistent layout for all authenticated routes. Contains sidebar (always visible on desktop) and main content area.
+**Purpose:** Persistent layout for all authenticated routes. Contains sidebar (always visible) and main content area.
 
 **Structure:**
 ```
@@ -247,40 +280,43 @@ Hash function: `charCodeSum(userId) % 8` where `charCodeSum` sums the char codes
 ```
 <aside> (w-[256px], h-full, bg-card, border-r, border-border, flex flex-col)
 
-  [Top section — logo]
+  [Top — logo]
   <div> (px-md, py-lg, border-b, border-border)
-    Lucide `GraduationCap` icon (20px, text-primary) + "CClone LMS" (14px, semibold)
+    Lucide GraduationCap icon (20px, text-primary) + "CClone LMS" (14px, semibold)
 
-  [Nav section — fills remaining space]
+  [Nav — fills remaining space]
   <nav> (flex-1, px-sm, py-md, flex flex-col gap-xs)
-    — NavItem: Dashboard      Lucide `LayoutDashboard`  → /dashboard  (placeholder)
-    — NavItem: Courses        Lucide `BookOpen`          → /courses    (placeholder)
-    — NavItem: Assignments    Lucide `ClipboardList`     → /assignments (placeholder)
-    — NavItem: Gradebook      Lucide `BarChart3`         → /gradebook  (placeholder)
+    NavItem: Dashboard     Lucide LayoutDashboard   → /dashboard    (placeholder page)
+    NavItem: Courses       Lucide BookOpen           → /courses      (placeholder page)
+    NavItem: Assignments   Lucide ClipboardList      → /assignments  (placeholder page)
+    NavItem: Gradebook     Lucide BarChart3          → /gradebook    (placeholder page)
 
-  [Bottom section — user identity + logout]
+  [Bottom — user identity + logout]
   <div> (px-sm, py-md, border-t, border-border, flex flex-col gap-xs)
     <div> (flex items-center gap-sm, px-sm, py-sm, rounded-md)
       <InitialsAvatar size="sm" />  (32px)
       <div>
         <p> (14px, semibold, text-foreground, truncate, max-w-[140px]) — user display name
         <p> (12px, text-muted-foreground, truncate, max-w-[140px]) — user email
-      <RouterLink to="/profile" aria-label="Account settings"> (Lucide `Settings` icon, 16px, text-muted-foreground, ml-auto)
-    <button> (full width, ghost variant, text-destructive, 14px, flex items-center gap-sm, justify-start, min-h-[44px])
-      Lucide `LogOut` icon (16px) + "Log out"
+      <RouterLink to="/profile" aria-label="Account settings">
+        Lucide Settings icon (16px, text-muted-foreground, ml-auto)
+    <button> (full-width, ghost variant, text-destructive, 14px, flex items-center gap-sm, justify-start, min-h-[44px])
+      Lucide LogOut icon (16px) + "Log out"
 ```
 
-**NavItem appearance:**
+**NavItem states:**
 
 | State | Visual treatment |
 |-------|-----------------|
 | Default | `text-muted-foreground`, icon `text-muted-foreground`, transparent background |
 | Hover | `bg-muted`, `text-foreground`, icon `text-foreground` |
-| Active (current route) | `bg-primary/10`, `text-primary`, icon `text-primary`, left border 2px `border-primary` |
+| Active (current route) | `bg-primary/10`, `text-primary`, icon `text-primary`, left border 2px `border-l-2 border-primary` |
 
 NavItem layout: `flex items-center gap-sm, px-sm, min-h-[44px], rounded-md, w-full, text-sm (14px)`
 
-**Responsive:** Phase 2 targets desktop only (≥1024px). No mobile drawer. No hamburger menu. Document this as a Phase 5 concern.
+**Responsive:** Phase 2 targets desktop only (viewport ≥ 1024px). No mobile drawer. No hamburger menu. Mobile layout is a Phase 5 concern.
+
+**Router integration:** `App.tsx` routing replaces the bare scaffold. Authenticated routes are nested under an `AppLayout` element; unauthenticated routes (`/login`, `/signup`) are nested under `AuthLayout`. `PrivateRoute` wraps the authenticated subtree.
 
 ---
 
@@ -288,22 +324,20 @@ NavItem layout: `flex items-center gap-sm, px-sm, min-h-[44px], rounded-md, w-fu
 
 **Page title:** "Account settings" (20px, semibold, mb-lg)
 
-**Section 1 — Identity**
+**Section 1 — Identity header**
 
-Header row:
 ```
 <div> (flex items-center gap-md, mb-lg)
   <InitialsAvatar size="lg" />  (40px)
   <div>
     <p> (14px, semibold) — user display name
-    <p> (14px, text-muted-foreground) — user email (read-only, not a link)
+    <p> (14px, text-muted-foreground) — user email (displayed, not a link, not editable)
+<p> (12px, text-muted-foreground, mt-sm) — "Avatar upload coming in a future update."
 ```
 
-Below header: inline note "Avatar upload coming in a future update." (12px, text-muted-foreground)
+**Section 2 — Display name form**
 
-**Section 2 — Display Name Form**
-
-Card with heading "Display name" (14px, semibold, mb-sm):
+`Card` with heading "Display name" (14px, semibold, mb-sm):
 
 | Field | Type | Validation | Error message |
 |-------|------|-----------|---------------|
@@ -313,14 +347,14 @@ Button: "Save name" (primary variant, right-aligned within card footer)
 
 States:
 - Default: Input pre-populated with current display name
-- Unchanged: "Save name" button disabled (compare current value to initial)
+- Unchanged: "Save name" button disabled (compare current value to initial value)
 - Loading: Button shows Lucide `Loader2` spinning (16px), disabled
-- Success: shadcn `Toast` (bottom-right): "Display name updated." — auto-dismiss 3s
-- Error: Form-level text below input, `text-destructive`, 12px: "Failed to save. Please try again."
+- Success: shadcn `Toast` (bottom-right, Sonner): "Display name updated." — auto-dismiss 3s
+- Error: Inline text below input, `text-destructive`, 12px: "Failed to save. Please try again."
 
-**Section 3 — Change Password Form**
+**Section 3 — Change password form**
 
-Card with heading "Change password" (14px, semibold, mb-sm):
+`Card` with heading "Change password" (14px, semibold, mb-sm):
 
 | Field | Type | Validation | Error message |
 |-------|------|-----------|---------------|
@@ -331,12 +365,12 @@ Card with heading "Change password" (14px, semibold, mb-sm):
 Button: "Update password" (primary variant, right-aligned within card footer)
 
 States:
-- Loading: Button shows Lucide `Loader2` spinning (16px), all three fields disabled
-- Success: All three fields cleared. shadcn `Toast` (bottom-right): "Password updated successfully." — auto-dismiss 3s
-- Error (wrong current password): Form-level `Alert variant="destructive"` above fields: "Current password is incorrect."
-- Error (server): Form-level `Alert variant="destructive"`: "Failed to update password. Please try again."
+- Loading: Button shows Lucide `Loader2` spinning (16px); all three password fields disabled
+- Success: All three fields cleared. shadcn `Toast` (bottom-right, Sonner): "Password updated successfully." — auto-dismiss 3s
+- Error (wrong current password): shadcn `Alert variant="destructive"` above fields: "Current password is incorrect."
+- Error (server): shadcn `Alert variant="destructive"`: "Failed to update password. Please try again."
 
-**Section layout:** Sections 2 and 3 are stacked vertically with `gap-lg` (24px) between them. Each section uses a shadcn `Card` with `p-lg` internal padding.
+**Section layout:** Sections 2 and 3 stacked vertically with `gap-lg` (24px) between them. Each section uses a shadcn `Card` with `p-lg` internal padding.
 
 ---
 
@@ -345,18 +379,18 @@ States:
 **Component type:** Logical wrapper — renders no visible DOM of its own.
 
 **Behavior:**
-1. Read `isAuthenticated` from Zustand auth store
-2. If `false` (or store not yet hydrated): render `<Navigate to={"/login?next=" + encodeURIComponent(location.pathname + location.search)} replace />`
-3. If `true`: render `<Outlet />` (React Router) or `{children}`
+1. Read `isAuthenticated` and `isHydrating` from Zustand auth store
+2. If `isHydrating` is true: render full-screen centered spinner (see below)
+3. If `isAuthenticated` is false: render `<Navigate to={"/login?next=" + encodeURIComponent(location.pathname + location.search)} replace />`
+4. If `isAuthenticated` is true: render `<Outlet />`
 
-**Loading state:** If auth store has a hydration check (e.g., initial token refresh in-flight), render a full-screen centered spinner:
+**Hydration spinner:**
 ```
-<div> (min-h-screen, flex items-center justify-center, bg-background)
-  <Lucide Loader2 icon> (32px, text-primary, animate-spin)
+<div> (min-h-screen, flex items-center justify-center, bg-background, aria-label="Loading")
+  <Lucide Loader2> (32px, text-primary, animate-spin)
 ```
-This prevents flash of redirect before auth state resolves.
 
-**No visual design beyond the spinner.** All visual treatment belongs to the child layout.
+This prevents flash of redirect before the initial silent token refresh resolves.
 
 ---
 
@@ -373,20 +407,19 @@ This prevents flash of redirect before auth state resolves.
 
 **Initials extraction:**
 - Split `displayName` by spaces
-- Take first character of first word + first character of last word (if ≥ 2 words)
+- Take first character of first word + first character of last word (if 2 or more words)
 - If single word: take first two characters
-- Uppercase result
-- Max 2 characters always
+- Uppercase the result; always 2 characters maximum
 
 Examples: "Minh Nguyen" → "MN", "Alice" → "AL", "Jean-Pierre Dupont" → "JD"
 
-**Background color:** Determined by `charCodeSum(userId) % 8` against the 8-color palette in the Color section above. The same user ID always produces the same color.
+**Background color:** `PALETTE[charCodeSum(userId) % 8]` — same user ID always produces the same color.
 
-**Text color:** Always `#ffffff` (white) regardless of background.
+**Text color:** Always `#ffffff` (white) regardless of background color.
 
-**Shape:** Perfect circle (`rounded-full`), `flex items-center justify-center`, `select-none`, `shrink-0`.
+**Shape:** Perfect circle — `rounded-full`, `flex items-center justify-center`, `select-none`, `shrink-0`.
 
-**Accessibility:** `aria-label="{displayName}'s avatar"`, `role="img"`.
+**Accessibility:** `role="img"`, `aria-label="{displayName}'s avatar"`.
 
 ---
 
@@ -418,14 +451,14 @@ Examples: "Minh Nguyen" → "MN", "Alice" → "AL", "Jean-Pierre Dupont" → "JD
 | Profile password server error | "Failed to update password. Please try again." |
 | Profile avatar note | "Avatar upload coming in a future update." |
 | Sidebar logout button | "Log out" |
-| Logout confirmation | None — logout is immediate, no confirmation dialog. (Destructive data loss is not possible; logout is reversible by logging in again.) |
-| Auth loading spinner | No visible text — spinner only |
+| Logout confirmation | None — logout is immediate, no confirmation dialog (reversible by re-logging in; no destructive data loss) |
+| Auth loading spinner | No visible text label — spinner only (aria-label="Loading" on wrapper) |
 | Sidebar nav: Dashboard | "Dashboard" |
 | Sidebar nav: Courses | "Courses" |
 | Sidebar nav: Assignments | "Assignments" |
 | Sidebar nav: Gradebook | "Gradebook" |
 
-> Exception: The Login CTA "Sign in" is a single verb without an explicit noun in the button label. This follows industry-standard authentication convention. The surrounding page context — h1 "Sign in to your account" immediately above the form — provides the full verb-noun framing. No change needed.
+> Note: The Login CTA "Sign in" is a single verb without an explicit noun in the button label. This follows industry-standard authentication convention. The surrounding page context — h1 "Sign in to your account" immediately above — provides the full verb-noun framing.
 
 ---
 
@@ -443,62 +476,59 @@ Examples: "Minh Nguyen" → "MN", "Alice" → "AL", "Jean-Pierre Dupont" → "JD
 Both Login and Signup password inputs include a visibility toggle:
 - Lucide `Eye` / `EyeOff` icon button (16px) inside the input's trailing slot
 - Toggles input `type` between `"password"` and `"text"`
-- `aria-label`: "Show password" / "Hide password"
+- `aria-label`: "Show password" / "Hide password" (toggled)
 
 ### Loading and Disabled States
 
 - During any async operation (login, signup, profile save): the submit button is disabled and shows `Loader2` spinning
-- Other form fields remain enabled during submit (do not disable the whole form)
+- Other form fields remain enabled during submit
 - Exception: password change form disables all three password fields during submit to prevent mid-request edits
 
 ### Redirect After Login
 
 - Read `?next` param from current URL
-- Validate: value must start with `/` and not be an external URL (reject values containing `://`)
+- Validate: must start with `/` and must not contain `://` (reject external URLs)
 - If valid: redirect to decoded `next` value after successful login
 - If missing or invalid: redirect to `/dashboard`
 
 ### Toast Notifications
 
-- Use shadcn `Toaster` (Sonner or shadcn's built-in, whichever ships with the chosen preset)
+- Use shadcn Sonner (`sonner` package, installed with shadcn)
 - Position: bottom-right
 - Auto-dismiss: 3 seconds for success toasts
-- Error states on the profile page use inline `Alert` components, not toasts — toasts are for success only
+- Error states on the profile page use inline `Alert` components, not toasts — toasts are for success feedback only
 
 ### Session Expiry (Silent Refresh Failure)
 
-When the axios interceptor detects a failed refresh (cannot renew the access token):
+When the axios interceptor detects a failed refresh:
 - Clear Zustand auth store
 - Redirect to `/login?next={currentPath}`
-- No toast or alert — the login page itself is the feedback (user sees they need to re-authenticate)
+- No toast or alert — the login page is the feedback
 
 ---
 
 ## Accessibility Baseline
 
-All interactive elements in this phase must meet:
-
 | Rule | Requirement |
 |------|-------------|
-| Touch target | 44px minimum height on all buttons and nav items (WCAG 2.5.5) |
-| Color contrast | Text on `primary` (indigo button): white text — verify ≥ 4.5:1 (standard indigo-500 on white passes) |
+| Touch targets | 44px minimum height on all buttons and nav items (WCAG 2.5.5) |
+| Color contrast | White text on `primary` (indigo-500) — verify ≥ 4.5:1; indigo-500 (#6366f1) on white passes at standard contrast |
 | Focus indicators | Do not suppress `:focus-visible` — shadcn defaults preserve this |
-| Form labels | Every input has an associated `<label>` — use shadcn `Label` component, not placeholder-only |
-| Error association | Error messages use `aria-describedby` linking input to error text — shadcn `FormMessage` handles this when using `react-hook-form` integration |
+| Form labels | Every input has an associated `<label>` via shadcn `Label` component; no placeholder-only labels |
+| Error association | Error messages linked via `aria-describedby` — shadcn `FormMessage` handles this with react-hook-form integration |
 | Avatar | `role="img"` and `aria-label="{name}'s avatar"` on InitialsAvatar |
-| Loading spinner | `aria-label="Loading"` on the full-screen spinner wrapper |
-| Settings icon link | `aria-label="Account settings"` on the icon-only `RouterLink` in the sidebar bottom section |
+| Loading spinner | `aria-label="Loading"` on the full-screen spinner wrapper div |
+| Settings icon link | `aria-label="Account settings"` on the icon-only RouterLink in sidebar bottom section |
 
 ---
 
 ## File Placement Contract
 
-The executor must place new files at these paths:
+The executor must place new files at these exact paths:
 
 | File | Path |
 |------|------|
-| shadcn components | `apps/frontend/src/components/ui/` (auto-generated by shadcn CLI) |
-| Layout components | `apps/frontend/src/components/layouts/` |
+| shadcn components (auto-generated) | `apps/frontend/src/components/ui/` |
 | AuthLayout | `apps/frontend/src/components/layouts/auth-layout.tsx` |
 | AppLayout | `apps/frontend/src/components/layouts/app-layout.tsx` |
 | Sidebar | `apps/frontend/src/components/layouts/sidebar.tsx` |
@@ -510,8 +540,9 @@ The executor must place new files at these paths:
 | Auth Zustand store | `apps/frontend/src/stores/auth-store.ts` |
 | Axios instance | `apps/frontend/src/lib/axios.ts` |
 | shadcn utils | `apps/frontend/src/lib/utils.ts` (auto-generated by shadcn init) |
+| Router config | `apps/frontend/src/App.tsx` (replace bare scaffold) |
 
-All files use the `@/` path alias. No relative `../` imports across directory boundaries.
+All files use `@/` path alias. No relative `../` imports across directory boundaries.
 
 ---
 
@@ -519,7 +550,7 @@ All files use the `@/` path alias. No relative `../` imports across directory bo
 
 | Registry | Blocks Used | Safety Gate |
 |----------|-------------|-------------|
-| shadcn official | `button`, `input`, `label`, `card`, `alert`, `toast` (or `sonner`), `form`, `separator` | Not required — official registry |
+| shadcn official | `button`, `input`, `label`, `card`, `alert`, `form`, `separator`, `sonner` | Not required — official registry |
 | Third-party | None | Not applicable |
 
 No third-party shadcn registries are used in this phase.
@@ -530,12 +561,16 @@ No third-party shadcn registries are used in this phase.
 
 | Source | Decisions Used |
 |--------|---------------|
-| CONTEXT.md (D-09 to D-17) | AuthLayout vs AppLayout split, PrivateRoute behavior, sidebar content, profile fields, initials avatar, no file upload, email read-only |
-| CONTEXT.md Specific Ideas | Deterministic avatar color from user ID hash, `?next=` URL encoding, sidebar "real" route paths |
-| CONTEXT.md Deferred | Avatar upload (Phase 4), email change, OAuth — none of these appear in this spec |
-| RESEARCH.md | TailwindCSS v4 CSS-first config, `@tailwindcss/vite` plugin, Vite `@/` alias already configured |
+| CONTEXT.md D-01 to D-05 | Token storage strategy (Zustand memory + httpOnly cookie), silent refresh interceptor, Redis blacklist on logout, refresh rotation |
+| CONTEXT.md D-06 to D-08 | Open self-registration, default STUDENT role, 409 on duplicate email |
+| CONTEXT.md D-09 to D-11 | Full-page auth routes, `?next=` redirect, PrivateRoute wrapper behavior |
+| CONTEXT.md D-12 to D-13 | Full sidebar skeleton in Phase 2, AppLayout vs AuthLayout split |
+| CONTEXT.md D-14 to D-17 | Profile page route, editable fields (name + password), email read-only, initials avatar (no file upload) |
+| CONTEXT.md Specific Ideas | Deterministic avatar color from user ID hash, `?next=` URL encoding, sidebar uses actual route paths |
+| CONTEXT.md Deferred | Avatar upload (Phase 4), email change, OAuth — none appear in this spec |
+| REQUIREMENTS.md | AUTH-01..05, ROLE-01 — all success criteria reflected in component states and form fields |
 | CLAUDE.md | `@/` path aliases mandatory, arrow function named exports, kebab-case filenames, strict TypeScript |
-| User input (this session) | shadcn/ui yes, Lucide React, indigo accent, Inter font |
+| Codebase scan (2026-04-16) | `@/` alias confirmed in `vite.config.ts`, TailwindCSS v4 active in `index.css`, no existing components.json, App.tsx is bare scaffold safe to replace |
 
 ---
 
