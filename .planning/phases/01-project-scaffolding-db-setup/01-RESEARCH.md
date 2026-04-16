@@ -678,17 +678,19 @@ npx lint-staged
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Turborepo dev task for NestJS hot reload vs Vite HMR**
    - What we know: `turbo dev` with `persistent: true` runs both simultaneously
    - What's unclear: Whether `nest start --watch` and `vite` both stream logs cleanly through turbo's output
    - Recommendation: Use `turbo dev` from root; both apps declare `dev` scripts; accept that log output may interleave
+   - RESOLVED: Plans run apps individually (`nest start --watch`, `vite`) rather than `turbo dev` in Phase 1 — log interleaving is not a concern.
 
 2. **pnpm `public-hoist-pattern` for NestJS decorators**
    - What we know: NestJS relies on decorator metadata which requires reflect-metadata to be available; pnpm's strict isolation can sometimes surface this
    - What's unclear: Whether pnpm@10 requires `.npmrc` `public-hoist-pattern[]=*` for NestJS to work correctly
    - Recommendation: Start without it; add `public-hoist-pattern[]=*` to `.npmrc` only if `reflect-metadata` errors appear during `nest start`
+   - RESOLVED: Start without `public-hoist-pattern` per CONTEXT.md; Plan 01-01 adds `auto-install-peers=true` in `.npmrc` as fallback.
 
 ---
 
