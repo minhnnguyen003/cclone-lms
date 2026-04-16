@@ -46,15 +46,15 @@ created: 2026-04-16
 | 2-??-04 | 01 | 0 | AUTH-02 | — | login with invalid creds throws error | unit | same | ❌ W0 | ⬜ pending |
 | 2-??-05 | 01 | 0 | AUTH-03 | — | /auth/refresh with valid cookie issues new tokens | unit | same | ❌ W0 | ⬜ pending |
 | 2-??-06 | 01 | 0 | AUTH-03 | — | blacklisted refresh token is rejected | unit | same | ❌ W0 | ⬜ pending |
-| 2-??-07 | 01 | 0 | AUTH-03 | — | silent refresh interceptor retries failed request | unit | `pnpm --filter frontend test -- --reporter=verbose` | ❌ W0 | ⬜ pending |
+| 2-??-07 | 03 | 0 | AUTH-03 | — | silent refresh interceptor retries failed request | unit | `npx vitest run --reporter=verbose src/lib/axios.test.ts` | ❌ W0 | ⬜ pending |
 | 2-??-08 | 01 | 0 | AUTH-04 | — | logout blacklists token and clears cookie | unit | `pnpm --filter backend test -- --testPathPattern auth.service` | ❌ W0 | ⬜ pending |
 | 2-??-09 | 01 | 0 | AUTH-04 | — | after logout, refresh token cannot be reused | unit | same | ❌ W0 | ⬜ pending |
 | 2-??-10 | 01 | 0 | AUTH-05 | — | PATCH /users/me updates display name | unit | `pnpm --filter backend test -- --testPathPattern users.service` | ❌ W0 | ⬜ pending |
-| 2-??-11 | 01 | 0 | AUTH-05 | — | PATCH /users/me/password rejects wrong current password | unit | same | ❌ W0 | ⬜ pending |
+| 2-??-11 | — | — | AUTH-05 | — | DEFERRED per D-21: PATCH /users/me/password rejects wrong current password | unit | — | — | ⏸️ deferred |
 | 2-??-12 | 01 | 0 | ROLE-01 | — | signup sets role = STUDENT by default | unit | `pnpm --filter backend test -- --testPathPattern auth.service` | ❌ W0 | ⬜ pending |
 | 2-??-13 | 01 | 0 | ROLE-01 | — | role enum exists: STUDENT, INSTRUCTOR, ADMIN | unit | same | ❌ W0 | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky · ⏸️ deferred*
 
 ---
 
@@ -62,6 +62,7 @@ created: 2026-04-16
 
 - [ ] `apps/backend/src/auth/auth.service.spec.ts` — stubs for AUTH-01, AUTH-02, AUTH-03, AUTH-04, ROLE-01
 - [ ] `apps/backend/src/users/users.service.spec.ts` — stubs for AUTH-05
+- [ ] `apps/frontend/src/lib/axios.test.ts` — stubs for AUTH-03 (silent refresh interceptor)
 - [ ] `MockRedisService` injectable — avoids live Redis in unit tests
 - [ ] Jest config confirmed working in `apps/backend/`
 - [ ] Vitest config confirmed working in `apps/frontend/`
