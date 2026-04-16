@@ -8,7 +8,8 @@ import { PrismaModule } from '@/prisma/prisma.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',
+      // envFilePath omitted — inject env vars at the process level in production.
+      // For local dev, .env is loaded by dotenv in prisma.config.ts.
     }),
     PrismaModule,
   ],
