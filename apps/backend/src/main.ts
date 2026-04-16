@@ -8,4 +8,7 @@ async function bootstrap(): Promise<void> {
   console.log(`Application is running on: http://localhost:${port}`);
 }
 
-bootstrap();
+bootstrap().catch((err: unknown) => {
+  console.error('Fatal error during bootstrap', err);
+  process.exit(1);
+});
