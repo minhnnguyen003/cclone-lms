@@ -78,7 +78,7 @@ The frontend work is larger than typical auth phases because D-12 requires build
 
 The main technical risks are: (1) cookie configuration correctness in NestJS (requires `cookie-parser` middleware and exact `Set-Cookie` attributes), (2) the silent refresh interceptor needing to prevent infinite retry loops, and (3) `isHydrating` state in the Zustand store to prevent flash-of-redirect on page load before the initial refresh resolves.
 
-**Primary recommendation:** Implement backend first (AuthModule → endpoints → tests), then frontend (shadcn init → Zustand store + axios interceptor → layouts → pages → profile). The clear dependency direction avoids parallel work blocking.
+**Primary recommendation:** Implement backend first (AuthModule -> endpoints -> tests), then frontend (shadcn init -> Zustand store + axios interceptor -> layouts -> pages -> profile). The clear dependency direction avoids parallel work blocking.
 
 ---
 
@@ -534,10 +534,8 @@ const router = createBrowserRouter([
 ### Pitfall 7: zod v4 API Changes
 **What goes wrong:** zod 4.x (current: 4.3.6) has breaking changes from zod 3.x. If documentation or examples reference `z.string().email()`, the API is the same, but `z.object()` shape inference and error format changed.
 **Why it happens:** zod 4 released recently; many guides still reference v3.
-**How to avoid:** Use `@hookform/resolvers/zod` resolver — verify it supports zod v4. Check `@hookform/resolvers` package version for zod v4 compatibility before installing.
+**How to avoid:** Use `@hookform/resolvers` v5.x which supports zod v4 via the Standard Schema protocol (see resolved Q1 below). The `zodResolver` import path remains `@hookform/resolvers/zod`.
 **Warning signs:** TypeScript errors on `zodResolver(schema)` or runtime parse errors with unexpected shape.
-
-> **Action required:** Verify `@hookform/resolvers` supports zod v4 before installing. If not, use zod 3.x instead. [ASSUMED — needs verification at install time]
 
 ### Pitfall 8: JWT Secret in Code
 **What goes wrong:** JWT_ACCESS_SECRET or JWT_REFRESH_SECRET hardcoded in source or committed to git.
@@ -668,7 +666,7 @@ Redis URL already exists in `.env.example` from Phase 1: `REDIS_URL="redis://loc
 | Single JWT secret | Separate access + refresh secrets | Industry norm | Refresh token compromise doesn't expose access token key |
 | `passport.initialize()` middleware manually | `@nestjs/passport` handles it via `PassportModule` | NestJS v6+ | No manual middleware wiring needed |
 | `useSelector` / Redux for auth state | Zustand lightweight store | 2022-2024 | Eliminates Redux boilerplate for simple auth state |
-| zod v3 schema validation | zod v4 (current: 4.3.6) | 2025 | Breaking API changes — verify `@hookform/resolvers` compatibility |
+| zod v3 schema validation | zod v4 (current: 4.3.6) | 2025 | Breaking API changes — use `@hookform/resolvers` v5.x (Standard Schema protocol) for compatibility |
 
 **Deprecated/outdated:**
 - KafkaJS: unmaintained since Feb 2023 (irrelevant to Phase 2 but documented in CLAUDE.md)
@@ -681,7 +679,7 @@ Redis URL already exists in `.env.example` from Phase 1: `REDIS_URL="redis://loc
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
 | A1 | Cookie `path: '/auth/refresh'` scoping prevents the cookie from being sent on other endpoints | Architecture Patterns (Pattern 3) | Cookie sent on all requests = unnecessary exposure, but not a blocker |
-| A2 | `@hookform/resolvers` supports zod v4 | Common Pitfalls (Pitfall 7) | Would require downgrading to zod v3 or switching resolver |
+| A2 | ~~`@hookform/resolvers` supports zod v4~~ | ~~Common Pitfalls (Pitfall 7)~~ | **RESOLVED** — see Q1 below. `@hookform/resolvers@5.2.2` uses `@standard-schema/utils` and ships with explicit zod v4 test fixtures. Confirmed compatible. |
 | A3 | `ioredis` v5 is compatible with NestJS 11 lifecycle hooks pattern (`OnModuleInit`/`OnModuleDestroy`) | Standard Stack | Alternative: use `@nestjs/cache-manager` with Redis adapter |
 | A4 | Refresh token rotation (single-use) with Redis blacklist is sufficient security for v1 LMS (not a banking app) | Architecture Patterns | Accepted risk for v1; refresh family invalidation (not single token) is a hardened alternative |
 | A5 | `passport-local` strategy is needed (vs implementing manual email/password check in AuthService) | Standard Stack | Alternative: skip LocalStrategy, validate credentials in service, use only JwtStrategy for guards |
@@ -689,22 +687,17 @@ Redis URL already exists in `.env.example` from Phase 1: `REDIS_URL="redis://loc
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Is `@hookform/resolvers` compatible with zod v4?**
-   - What we know: zod 4.3.6 is current. `@hookform/resolvers` is the standard bridge package.
-   - What's unclear: The resolvers package may not yet have released zod v4 support.
-   - Recommendation: Run `npm view @hookform/resolvers` and check peer deps at install time. Fall back to zod v3 if v4 not supported.
+   - **RESOLVED (2026-04-16):** Yes. `@hookform/resolvers@5.2.2` depends on `@standard-schema/utils@^0.3.0` and uses the Standard Schema protocol. Zod v4 implements the `@standard-schema/spec` interface natively (built-in, no extra dependency). The `@hookform/resolvers` package ships with explicit test fixtures for zod v4 (`data-v4.ts`, `data-v4-mini.ts`) alongside zod v3 fixtures. The `zodResolver` import path `@hookform/resolvers/zod` continues to work. No fallback to zod v3 needed.
+   - **Verification:** `npm view @hookform/resolvers peerDependencies` returns `{ 'react-hook-form': '^7.55.0' }` (no zod peer dep -- uses Standard Schema instead). `npm view @hookform/resolvers dependencies` returns `{ '@standard-schema/utils': '^0.3.0' }`.
 
 2. **Same-origin or cross-origin API calls in dev?**
-   - What we know: Frontend Vite dev server runs on a different port than NestJS (3000 vs 5173). Cookies require `withCredentials: true` for cross-origin.
-   - What's unclear: Whether a Vite proxy is configured (not visible in current `vite.config.ts`).
-   - Recommendation: Add a Vite proxy in `vite.config.ts` to forward `/api` to `localhost:3000`. This makes requests same-origin and simplifies cookie handling. Alternatively configure CORS + `withCredentials` explicitly.
+   - **RESOLVED (2026-04-16):** Plan 02-03 Task 1 adds a Vite proxy in `vite.config.ts` that forwards `/auth/*` and `/users/*` to `http://localhost:3000`. This makes API calls same-origin during development, so cookies are sent automatically. The `withCredentials: true` on the axios instance is kept for robustness (harmless for same-origin, required if proxy is ever removed).
 
 3. **Redis connection in test environment?**
-   - What we know: Jest unit tests for `AuthService` should not require a live Redis connection.
-   - What's unclear: Whether a mock `RedisService` is needed in the test module, or if tests can be structured to avoid the Redis dependency.
-   - Recommendation: Create a `MockRedisService` class with no-op implementations for unit tests. Use the real service only in e2e tests where Docker is running.
+   - **RESOLVED (2026-04-16):** Plan 02-01 Task 1 creates `redis.service.spec.ts` using `jest.mock('ioredis')` to mock the Redis constructor. Plan 02-02 Task 1 mocks `RedisService` in auth service tests via NestJS Testing module (`Test.createTestingModule` with mock providers). No live Redis connection needed for unit tests. E2e tests (if added later) would use Docker.
 
 ---
 
@@ -737,7 +730,7 @@ All external dependencies are available. No blocking gaps.
 | Quick run (frontend) | `pnpm --filter frontend test` |
 | Full suite | `pnpm test` (Turborepo runs both) |
 
-### Phase Requirements → Test Map
+### Phase Requirements -> Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
@@ -802,7 +795,7 @@ All external dependencies are available. No blocking gaps.
 | Refresh token theft + reuse | Spoofing | Single-use rotation: old token blacklisted in Redis on each refresh. Stolen token can only be used once before being invalidated |
 | Brute-force login | Tampering | `@nestjs/throttler` (Phase 2 should configure rate limiting on `/auth/login` and `/auth/signup`) |
 | JWT secret in environment | Information Disclosure | ConfigService reads from process.env; `.env` gitignored; separate access + refresh secrets |
-| Insecure password storage | Information Disclosure | bcrypt with work factor ≥ 10 (bcrypt default is 10) |
+| Insecure password storage | Information Disclosure | bcrypt with work factor >= 10 (bcrypt default is 10) |
 | Open redirect via `?next=` | Tampering | Validate: must start with `/`, must not contain `://`. Reject external URLs |
 
 > **Rate limiting note:** `@nestjs/throttler` is listed in CLAUDE.md stack for auth endpoints. It is not yet installed (not in `apps/backend/package.json`). Phase 2 plans should include installing and configuring `@nestjs/throttler` on `/auth/login` and `/auth/signup` to satisfy ASVS V4.
@@ -814,6 +807,7 @@ All external dependencies are available. No blocking gaps.
 ### Primary (HIGH confidence)
 - [VERIFIED: npm registry] — `@nestjs/passport@11.0.5`, `@nestjs/jwt@11.0.2`, `passport@0.7.0`, `passport-jwt@4.0.1`, `passport-local@1.0.0`, `bcrypt@6.0.0`, `ioredis@5.10.1`, `cookie-parser@1.4.7` — all verified 2026-04-16
 - [VERIFIED: npm registry] — `@tanstack/react-query@5.99.0`, `zustand@5.0.12`, `react-hook-form@7.72.1`, `zod@4.3.6`, `axios@1.15.0`, `lucide-react@1.8.0`, `@fontsource/inter@5.2.8` — all verified 2026-04-16
+- [VERIFIED: npm registry] — `@hookform/resolvers@5.2.2` — depends on `@standard-schema/utils@^0.3.0`, ships with zod v3 + v4 test fixtures, confirmed zod v4 compatible — verified 2026-04-16
 - [VERIFIED: codebase] — `apps/backend/prisma/schema.prisma` — User model with Role enum already exists (STUDENT/INSTRUCTOR/ADMIN)
 - [VERIFIED: codebase] — `apps/backend/src/prisma/prisma.service.ts` — PrismaService injectable pattern confirmed
 - [VERIFIED: codebase] — `apps/backend/src/app.module.ts` — ConfigModule pattern for AuthModule to follow
@@ -827,7 +821,6 @@ All external dependencies are available. No blocking gaps.
 ### Tertiary (LOW confidence)
 - [ASSUMED] — Axios interceptor queue pattern for concurrent 401 handling
 - [ASSUMED] — Cookie `path: '/auth/refresh'` scoping behavior
-- [ASSUMED] — `@hookform/resolvers` zod v4 compatibility (open question)
 - [ASSUMED] — `withCredentials: true` requirement depends on dev proxy configuration
 
 ---
@@ -837,7 +830,7 @@ All external dependencies are available. No blocking gaps.
 **Confidence breakdown:**
 - Standard stack: HIGH — all package versions verified against npm registry 2026-04-16
 - Architecture: HIGH — established NestJS + Passport + JWT patterns; decisions locked in CONTEXT.md
-- Frontend patterns: MEDIUM-HIGH — Zustand + axios interceptor patterns are well-established; zod v4 compatibility is an open question
+- Frontend patterns: HIGH — Zustand + axios interceptor patterns well-established; zod v4 + @hookform/resolvers v5.x compatibility confirmed
 - Security: HIGH — ASVS categories verified against phase tech stack; threats identified from established attack patterns
 
 **Research date:** 2026-04-16
