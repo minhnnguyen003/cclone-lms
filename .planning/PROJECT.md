@@ -12,7 +12,13 @@ Instructors can create courses, assign work, and grade submissions in a complete
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] pnpm monorepo with Turborepo task pipeline — Validated in Phase 1: Project Scaffolding + DB Setup
+- [x] NestJS backend with Prisma v7, PrismaService/PrismaModule, and User schema — Validated in Phase 1
+- [x] React + Vite 8 + TailwindCSS v4 frontend (CSS-first, no config file) — Validated in Phase 1
+- [x] Docker Compose dev infrastructure (PostgreSQL 16, Redis 7, MinIO with auto-bucket) — Validated in Phase 1
+- [x] ESLint flat config, Prettier, husky pre-commit hooks, lint-staged — Validated in Phase 1
+- [x] Jest (backend) + Vitest (frontend) test runners with smoke tests — Validated in Phase 1
+- [x] Path aliases (@/) in both backend (tsconfig + Jest) and frontend (Vite) — Validated in Phase 1
 
 ### Active
 
@@ -90,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after initialization*
+*Last updated: 2026-04-16 — Phase 1 (Project Scaffolding + DB Setup) complete*
