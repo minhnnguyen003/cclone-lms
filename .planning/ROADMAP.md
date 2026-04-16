@@ -40,9 +40,9 @@
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Monorepo skeleton (pnpm + Turborepo + Docker Compose + env config)
-- [ ] 01-02-PLAN.md — NestJS backend with Prisma + React frontend + shared types package
-- [ ] 01-03-PLAN.md — Dev tooling (ESLint, Prettier, husky, lint-staged) + test infrastructure
+- [x] 01-01-PLAN.md — Monorepo skeleton (pnpm + Turborepo + Docker Compose + env config)
+- [x] 01-02-PLAN.md — NestJS backend with Prisma + React frontend + shared types package
+- [x] 01-03-PLAN.md — Dev tooling (ESLint, Prettier, husky, lint-staged) + test infrastructure
 
 **Success Criteria:**
 1. NestJS project initializes and starts without errors
