@@ -10,7 +10,7 @@
 | # | Phase | Goal | Requirements | Plans |
 |---|-------|------|--------------|-------|
 | 1 | Project Scaffolding + DB Setup | NestJS project, Prisma, Docker Compose, and dev tooling are configured and running | (infrastructure) | 3 plans |
-| 2 | Authentication | Users can sign up, log in, stay logged in, log out, and edit their profile | AUTH-01..05, ROLE-01 (6) | TBD |
+| 2 | Authentication | Users can sign up, log in, stay logged in, log out, and edit their profile | AUTH-01..05, ROLE-01 (6) | 4 plans |
 | 3 | Access Control | Admin assigns roles, CASL enforces resource access, RLS isolates tenant data | ROLE-02..05 (4) | TBD |
 | 4 | File Management | Files upload to MinIO with validation and signed URL access | FILE-01, FILE-02, FILE-03 (3) | TBD |
 | 5 | Course Management | Admin can create courses and enroll students, instructors can manage courses, students can browse | CRSE-01..04 (4) | TBD |
@@ -67,6 +67,14 @@ Plans:
 
 **Requirements:**
 - AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, ROLE-01
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Backend auth infrastructure (Redis module, domain errors, main.ts config, schema update)
+- [ ] 02-02-PLAN.md — Backend auth endpoints (signup, login, refresh, logout, profile CRUD)
+- [ ] 02-03-PLAN.md — Frontend foundation (shadcn/ui, Zustand auth store, axios interceptors, layouts)
+- [ ] 02-04-PLAN.md — Frontend pages + wiring (login, signup, profile, routing, end-to-end verification)
 
 **Success Criteria:**
 1. User can sign up with email and password (password hashed with bcrypt)
@@ -369,4 +377,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-04-14*
-*Last updated: 2026-04-16 after planning Phase 1 (3 plans)*
+*Last updated: 2026-04-16 after planning Phase 2 (4 plans)*
