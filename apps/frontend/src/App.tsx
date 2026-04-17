@@ -40,7 +40,7 @@ const router = createBrowserRouter([
 ]);
 
 export const App = () => {
-  const { setAuth, setHydrating, clearAuth } = useAuthStore();
+  const { setAuth, clearAuth } = useAuthStore();
 
   useEffect(() => {
     // Attempt silent refresh on app mount to restore session
@@ -55,7 +55,7 @@ export const App = () => {
     };
 
     void hydrate();
-  }, [setAuth, setHydrating, clearAuth]);
+  }, [setAuth, clearAuth]);
 
   return <RouterProvider router={router} />;
 };
