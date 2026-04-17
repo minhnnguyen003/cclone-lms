@@ -5,8 +5,8 @@
   "scripts": {
     "build": "nest build && tsc-alias -p tsconfig.json",
     "start": "node dist/main",
-    "start:dev": "NODE_OPTIONS='-r tsconfig-paths/register' nest start --watch",
-    "start:debug": "NODE_OPTIONS='-r tsconfig-paths/register' nest start --debug --watch",
+    "start:dev": "cross-env NODE_OPTIONS=\"-r tsconfig-paths/register\" nest start --watch",
+    "start:debug": "cross-env NODE_OPTIONS=\"-r tsconfig-paths/register\" nest start --debug --watch",
     "test": "jest --passWithNoTests",
     "lint": "eslint \"{src,test}/**/*.ts\""
   },
@@ -44,6 +44,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "@types/pg": "^8.20.0",
+    "cross-env": "^10.1.0",
     "dotenv": "^16.0.0",
     "jest": "^30.3.0",
     "prisma": "^7.7.0",
