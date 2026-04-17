@@ -47,6 +47,9 @@ export class UsersService {
   }
 
   async updateProfile(id: string, dto: UpdateProfileDto): Promise<UpdatedUserProfile> {
+    // Verifies existence and soft-delete in one call; throws UserNotFoundError if absent
+    await this.findById(id);
+
     const updateData: Partial<{ name: string; timezone: string }> = {};
 
     if (dto.name !== undefined) {
