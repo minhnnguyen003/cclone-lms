@@ -1,17 +1,61 @@
-import { createBrowserRouter, RouterProvider } from 'react-router';
+import { useEffect } from 'react';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router';
+
+import { AppLayout } from '@/components/layouts/app-layout';
+import { AuthLayout } from '@/components/layouts/auth-layout';
+import { PrivateRoute } from '@/components/layouts/private-route';
+import { api } from '@/lib/axios';
+import { DashboardPage } from '@/pages/dashboard';
+import { LoginPage } from '@/pages/login';
+import { PlaceholderPage } from '@/pages/placeholder';
+import { ProfilePage } from '@/pages/profile';
+import { SignupPage } from '@/pages/signup';
+import { useAuthStore } from '@/stores/auth-store';
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">CClone LMS</h1>
-          <p className="mt-2 text-gray-600">Phase 1 — Scaffold OK</p>
-        </div>
-      </div>
-    ),
+    element: <AuthLayout />,
+    children: [
+      { path: '/login', element: <LoginPage /> },
+      { path: '/signup', element: <SignupPage /> },
+    ],
   },
+  {
+    element: <PrivateRoute />,
+    children: [
+      {
+        element: <AppLayout />,
+        children: [
+          { path: '/dashboard', element: <DashboardPage /> },
+          { path: '/profile', element: <ProfilePage /> },
+          { path: '/courses', element: <PlaceholderPage title="Courses" /> },
+          { path: '/assignments', element: <PlaceholderPage title="Assignments" /> },
+          { path: '/gradebook', element: <PlaceholderPage title="Gradebook" /> },
+        ],
+      },
+    ],
+  },
+  { path: '/', element: <Navigate to="/dashboard" replace /> },
+  { path: '*', element: <Navigate to="/dashboard" replace /> },
 ]);
 
-export const App = () => <RouterProvider router={router} />;
+export const App = () => {
+  const { setAuth, setHydrating, clearAuth } = useAuthStore();
+
+  useEffect(() => {
+    // Attempt silent refresh on app mount to restore session
+    const hydrate = async (): Promise<void> => {
+      try {
+        const { data } = await api.post('/auth/refresh');
+        setAuth(data.data.user, data.data.accessToken);
+      } catch {
+        // No valid refresh token — user needs to log in
+        clearAuth();
+      }
+    };
+
+    void hydrate();
+  }, [setAuth, setHydrating, clearAuth]);
+
+  return <RouterProvider router={router} />;
+};
