@@ -79,12 +79,17 @@ skipped: 1
 ## Gaps
 
 - truth: "Frontend dev server starts with no warnings or errors"
-  status: failed
+  status: diagnosed
   reason: "User reported: Vite 8/Rolldown emits 'Invalid input options: jsx' warning on startup"
   severity: minor
   test: 1
-  artifacts: [apps/frontend/tsconfig.app.json, apps/frontend/vite.config.ts]
-  missing: []
+  root_cause: "@vitejs/plugin-react@4.7.0 is incompatible with Vite 8. Its config() hook returns { rollupOptions: { jsx: { mode: 'automatic' } } } when rolldownVersion is detected. Vite 8 forwards rollupOptions to rolldownOptions, causing jsx to reach Rolldown as a top-level InputOption. rolldown@1.0.0-rc.15 removed jsx from InputOptions (it belongs in TransformOptions), so Rolldown rejects it."
+  artifacts:
+    - path: "apps/frontend/package.json"
+      issue: "@vitejs/plugin-react resolves to v4.7.0 which has Vite peer dep range ^4–7, excluding Vite 8"
+  missing:
+    - "Upgrade @vitejs/plugin-react to a Vite 8-compatible version, or switch to @vitejs/plugin-react-oxc (recommended by the plugin itself for Rolldown environments)"
+  debug_session: .planning/debug/vite-jsx-warning.md
 
 - truth: "Invalid login shows error alert and stays on /login — no redirect"
   status: failed
