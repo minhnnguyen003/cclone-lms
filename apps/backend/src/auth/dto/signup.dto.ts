@@ -7,6 +7,7 @@ export class SignupDto {
 
   @IsString()
   @MinLength(8)
+  @MaxLength(128)
   @Matches(/[A-Z]/, { message: 'Password must contain at least 1 uppercase letter.' })
   @Matches(/[0-9]/, { message: 'Password must contain at least 1 number.' })
   @Matches(/[^a-zA-Z0-9]/, { message: 'Password must contain at least 1 symbol.' })
