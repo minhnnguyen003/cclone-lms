@@ -74,7 +74,7 @@ Plans:
 - [x] 02-01-PLAN.md — Backend auth infrastructure (Redis module, domain errors, main.ts config, schema update)
 - [x] 02-02-PLAN.md — Backend auth endpoints (signup, login, refresh, logout, profile CRUD)
 - [x] 02-03-PLAN.md — Frontend foundation (shadcn/ui, Zustand auth store, axios interceptors, layouts)
-- [ ] 02-04-PLAN.md — Frontend pages + wiring (login, signup, profile, routing, end-to-end verification)
+- [x] 02-04-PLAN.md — Frontend pages + wiring (login, signup, profile, routing, end-to-end verification)
 
 **Success Criteria:**
 1. User can sign up with email and password (password hashed with bcrypt)
