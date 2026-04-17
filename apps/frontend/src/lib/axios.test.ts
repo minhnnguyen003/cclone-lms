@@ -29,12 +29,13 @@ describe('axios silent refresh interceptor', () => {
       value: { ...originalLocation, pathname: '/dashboard', search: '', href: '' },
     });
 
-    // Clear module cache to get fresh axios instance with interceptors
+    // Clear module cache to get a fresh axios instance with clean interceptors
     vi.resetModules();
     const axiosModule = await import('@/lib/axios');
     api = axiosModule.api;
 
-    vi.clearAllMocks();
+    // Restore mock return value AFTER module import (so the request interceptor
+    // inside the freshly-loaded module sees the correct accessToken when it fires)
     mockGetState.mockReturnValue({
       accessToken: 'old-access-token',
       setAuth: mockSetAuth,
@@ -43,6 +44,11 @@ describe('axios silent refresh interceptor', () => {
   });
 
   afterEach(() => {
+    // Clear mocks AFTER each test, not before — clearing in beforeEach would wipe
+    // the return value set above before the test body runs, causing the interceptor
+    // to see accessToken: undefined on the first request in each test.
+    vi.clearAllMocks();
+
     Object.defineProperty(window, 'location', {
       writable: true,
       value: originalLocation,
@@ -50,21 +56,26 @@ describe('axios silent refresh interceptor', () => {
   });
 
   it('attaches Bearer token from auth store on requests', async () => {
-    // Spy on the request interceptor by making a request and checking config
-    const requestSpy = vi.fn();
-    api.interceptors.request.use((config) => {
-      requestSpy(config.headers.Authorization);
-      // Abort the request so we don't need a real server
-      throw new Error('abort');
-    });
+    // Use a custom adapter to inspect config AFTER all request interceptors have run.
+    // axios request interceptors run in LIFO order — a spy added via interceptors.request.use()
+    // would run BEFORE the token-setting interceptor from axios.ts, seeing undefined.
+    // The adapter is the final step in the pipeline: it receives the fully-processed config
+    // with all interceptor mutations applied.
+    let capturedAuthorization: string | undefined;
+    api.defaults.adapter = async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
+      capturedAuthorization = config.headers.Authorization as string;
+      return {
+        data: {},
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      };
+    };
 
-    try {
-      await api.get('/test');
-    } catch {
-      // Expected abort
-    }
+    await api.get('/test');
 
-    expect(requestSpy).toHaveBeenCalledWith('Bearer old-access-token');
+    expect(capturedAuthorization).toBe('Bearer old-access-token');
   });
 
   it('triggers refresh on 401 response and retries original request', async () => {
