@@ -45,11 +45,13 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Only intercept 401 errors, not on retry, and not on the refresh endpoint itself
+    // Only intercept 401 errors, not on retry, and not on auth endpoints that
+    // intentionally return 401 (login/signup/refresh) — those handle errors themselves
+    const AUTH_ENDPOINTS = ['/auth/refresh', '/auth/login', '/auth/signup'];
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
-      originalRequest.url === '/auth/refresh'
+      AUTH_ENDPOINTS.includes(originalRequest.url ?? '')
     ) {
       return Promise.reject(error);
     }
