@@ -31,14 +31,24 @@ interface AuthTokensResponse {
 
 @Injectable()
 export class AuthService {
+  private readonly accessSecret: string;
+  private readonly refreshSecret: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
-  ) {}
+  ) {
+    const accessSecret = process.env['JWT_ACCESS_SECRET'];
+    const refreshSecret = process.env['JWT_REFRESH_SECRET'];
+    if (!accessSecret) throw new Error('JWT_ACCESS_SECRET environment variable is not set');
+    if (!refreshSecret) throw new Error('JWT_REFRESH_SECRET environment variable is not set');
+    this.accessSecret = accessSecret;
+    this.refreshSecret = refreshSecret;
+  }
 
   async signup(dto: SignupDto): Promise<AuthTokensResponse> {
-    const existing = await this.prisma.user.findUnique({
+    const existing = await this.prisma.user.findFirst({
       where: { email: dto.email, deleted_at: null },
     });
     if (existing) {
@@ -71,8 +81,11 @@ export class AuthService {
     };
   }
 
-  async validateUser(email: string, password: string): Promise<{ id: string; email: string; role: string }> {
-    const user = await this.prisma.user.findUnique({
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<{ id: string; email: string; role: string }> {
+    const user = await this.prisma.user.findFirst({
       where: { email, deleted_at: null },
     });
     if (!user) {
@@ -116,7 +129,7 @@ export class AuthService {
     let payload: TokenPayload & { exp: number };
     try {
       payload = this.jwtService.verify<TokenPayload & { exp: number }>(oldRefreshToken, {
-        secret: process.env['JWT_REFRESH_SECRET'],
+        secret: this.refreshSecret,
       });
     } catch {
       throw new InvalidCredentialsError('Invalid or expired refresh token.');
@@ -159,7 +172,7 @@ export class AuthService {
   async logout(refreshToken: string): Promise<void> {
     try {
       const payload = this.jwtService.verify<TokenPayload & { exp: number }>(refreshToken, {
-        secret: process.env['JWT_REFRESH_SECRET'],
+        secret: this.refreshSecret,
       });
       const remainingTtl = payload.exp - Math.floor(Date.now() / 1000);
       const ttl = remainingTtl > 0 ? remainingTtl : 1;
@@ -171,7 +184,7 @@ export class AuthService {
 
   private signAccessToken(payload: TokenPayload): string {
     const options: JwtSignOptions = {
-      secret: process.env['JWT_ACCESS_SECRET'],
+      secret: this.accessSecret,
       expiresIn: (process.env['JWT_ACCESS_EXPIRES_IN'] ?? '15m') as JwtSignOptions['expiresIn'],
     };
     return this.jwtService.sign(payload, options);
@@ -179,7 +192,7 @@ export class AuthService {
 
   private signRefreshToken(payload: TokenPayload): string {
     const options: JwtSignOptions = {
-      secret: process.env['JWT_REFRESH_SECRET'],
+      secret: this.refreshSecret,
       expiresIn: (process.env['JWT_REFRESH_EXPIRES_IN'] ?? '30d') as JwtSignOptions['expiresIn'],
     };
     return this.jwtService.sign(payload, options);
