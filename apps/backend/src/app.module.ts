@@ -12,8 +12,7 @@ import { UsersModule } from '@/users/users.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // envFilePath omitted — inject env vars at the process level in production.
-      // For local dev, .env is loaded by dotenv in prisma.config.ts.
+      envFilePath: '.env',
     }),
     PrismaModule,
     RedisModule,
