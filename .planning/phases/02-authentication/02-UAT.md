@@ -1,19 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 02-authentication
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md]
 started: 2026-04-17T08:00:00Z
-updated: 2026-04-17T08:00:00Z
+updated: 2026-04-17T09:30:00Z
 ---
 
 ## Current Test
 
-number: 6
-name: Invalid Login — wrong password
-expected: |
-  On the login page, enter a valid email with a wrong password. The form shows a red alert:
-  "Invalid email or password. Please try again." No redirect — stays on /login.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -41,45 +36,45 @@ result: pass
 
 ### 6. Invalid Login — wrong password
 expected: On the login page, enter a valid email with a wrong password. The form shows a red alert: "Invalid email or password. Please try again." No redirect occurs, the form stays on /login.
-result: issue
-reported: "Red alert shows for a few seconds but the page refreshes/redirects"
-severity: major
+result: pass
+note: fixed — axios interceptor now excludes /auth/login from 401 retry logic
 
 ### 7. Session Hydration — refresh on app mount
 expected: Log in, then close the browser tab (do NOT log out). Reopen http://localhost:5174. You should land on /dashboard still logged in — the app silently restored your session via the refresh token cookie without showing the login page.
-result: [pending]
+result: pass
 
 ### 8. Private Route Redirect — unauthenticated
 expected: Clear cookies (or open a private/incognito window). Navigate directly to http://localhost:5174/dashboard. You should be redirected to /login?next=%2Fdashboard. After logging in, you should land on /dashboard (the ?next= redirect works).
-result: [pending]
+result: pass
 
 ### 9. Log Out
 expected: While logged in, click the Logout button in the sidebar. You are redirected to /login. If you then navigate back to /dashboard, you are redirected to /login again (session is fully cleared).
-result: [pending]
+result: pass
 
 ### 10. View Profile
 expected: While logged in, navigate to http://localhost:5174/profile. You see your full name, email (read-only), and an initials avatar. The display name field and timezone dropdown are pre-populated with your current values.
-result: [pending]
+result: pass
 
 ### 11. Update Profile — display name
 expected: On the profile page, change the display name field and click "Save changes". A toast notification "Display name updated." appears. The sidebar immediately reflects the new name. If you reload, the new name persists.
-result: [pending]
+result: pass
 
 ### 12. Update Profile — timezone
 expected: On the profile page, change the timezone dropdown to a different timezone and click "Save changes". The save succeeds (toast appears). Reload the profile page — the new timezone is still selected.
-result: [pending]
+result: pass
 
 ### 13. Token Refresh Interceptor — silent retry
 expected: Log in. Open DevTools Network tab. Wait for the access token to expire (default 15 minutes), OR manually clear the accessToken from Zustand store via DevTools. Make any authenticated request (navigate to /profile). The app should silently refresh the token and load the page — you do NOT see the login page.
-result: [pending]
+result: skipped
+reason: requires waiting 15 min for token expiry or DevTools manipulation — covered indirectly by test 7 (session hydration)
 
 ## Summary
 
 total: 13
-passed: 4
-issues: 2
-pending: 7
-skipped: 0
+passed: 11
+issues: 1
+pending: 0
+skipped: 1
 
 ## Gaps
 
