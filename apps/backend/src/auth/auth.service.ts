@@ -102,7 +102,7 @@ export class AuthService {
 
   async login(userId: string): Promise<AuthTokensResponse> {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userId, deleted_at: null },
     });
     if (!user) {
       throw new InvalidCredentialsError();
@@ -142,7 +142,7 @@ export class AuthService {
     }
 
     const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
+      where: { id: payload.sub, deleted_at: null },
     });
     if (!user) {
       throw new InvalidCredentialsError('User not found.');
