@@ -2,8 +2,10 @@
 phase: 02-authentication
 reviewed: 2026-04-17T00:00:00Z
 depth: standard
-files_reviewed: 53
+files_reviewed: 43
 files_reviewed_list:
+  - .env.example
+  - apps/backend/jest.config.ts
   - apps/backend/package.json
   - apps/backend/prisma/schema.prisma
   - apps/backend/src/app.module.ts
@@ -31,40 +33,25 @@ files_reviewed_list:
   - apps/backend/src/users/users.module.ts
   - apps/backend/src/users/users.service.spec.ts
   - apps/backend/src/users/users.service.ts
-  - apps/frontend/components.json
-  - apps/frontend/package.json
+  - apps/frontend/src/App.test.tsx
   - apps/frontend/src/App.tsx
   - apps/frontend/src/components/layouts/app-layout.tsx
   - apps/frontend/src/components/layouts/auth-layout.tsx
   - apps/frontend/src/components/layouts/private-route.tsx
   - apps/frontend/src/components/layouts/sidebar.tsx
-  - apps/frontend/src/components/ui/alert.tsx
-  - apps/frontend/src/components/ui/button.tsx
-  - apps/frontend/src/components/ui/card.tsx
-  - apps/frontend/src/components/ui/form.tsx
   - apps/frontend/src/components/ui/initials-avatar.tsx
-  - apps/frontend/src/components/ui/input.tsx
-  - apps/frontend/src/components/ui/label.tsx
-  - apps/frontend/src/components/ui/separator.tsx
-  - apps/frontend/src/components/ui/sonner.tsx
-  - apps/frontend/src/index.css
   - apps/frontend/src/lib/axios.test.ts
   - apps/frontend/src/lib/axios.ts
-  - apps/frontend/src/lib/utils.ts
-  - apps/frontend/src/main.tsx
   - apps/frontend/src/pages/dashboard.tsx
   - apps/frontend/src/pages/login.tsx
-  - apps/frontend/src/pages/placeholder.tsx
   - apps/frontend/src/pages/profile.tsx
   - apps/frontend/src/pages/signup.tsx
   - apps/frontend/src/stores/auth-store.ts
-  - apps/frontend/tsconfig.json
-  - apps/frontend/vite.config.ts
 findings:
-  critical: 0
-  warning: 4
+  critical: 2
+  warning: 5
   info: 4
-  total: 8
+  total: 11
 status: issues_found
 ---
 
@@ -72,48 +59,65 @@ status: issues_found
 
 **Reviewed:** 2026-04-17T00:00:00Z
 **Depth:** standard
-**Files Reviewed:** 53
+**Files Reviewed:** 43
 **Status:** issues_found
 
 ## Summary
 
-Phase 02 implements a complete JWT-based authentication system (signup, login, refresh, logout) with an httpOnly refresh-token cookie, token rotation via Redis blacklisting, and a matching React frontend with a Zustand auth store and axios silent-refresh interceptor. The architecture is sound: domain errors map cleanly to HTTP responses, the `DomainExceptionFilter` handles all custom error types, password validation is strict on both client and server, and the open-redirect guard on the `next` parameter is correct.
+Phase 02 implements a complete JWT-based authentication system: signup, login, token rotation with Redis blacklisting, logout, silent refresh via an axios interceptor, and a user profile endpoint — with a full React frontend. The architecture is well-structured: domain errors map cleanly to HTTP responses via `DomainExceptionFilter`, the IANA-timezone dropdown and open-redirect guard on the `next` parameter are both correctly implemented, and test coverage exists for the service layer.
 
-Four warnings require attention before moving to the next phase:
+Two critical issues require immediate attention before this phase can be considered production-ready:
 
-1. `auth.service.ts` — `login()` and `refresh()` look up users by ID without the `deleted_at: null` filter, allowing soft-deleted users to authenticate.
-2. `auth.service.ts` — `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` are read from `process.env` at call time instead of at module init, meaning a missing secret only surfaces at runtime (a signing call), not at startup.
-3. `users.service.ts` — `updateProfile()` calls `prisma.user.update` without first checking existence, so it propagates a raw Prisma `P2025` (record not found) error rather than the domain `UserNotFoundError`.
-4. `App.tsx` — `setHydrating` is listed in the `useEffect` dependency array but is never called inside the effect, causing an unnecessary re-run if the store reference changes (unlikely in practice but misleading and a lint warning with `react-hooks/exhaustive-deps`).
+1. `auth.service.ts` — `findUnique` is called with a compound `where` that mixes the unique field (`email`) with a non-unique field (`deleted_at: null`). Prisma v7 rejects this at runtime with a validation error, meaning `signup` and `validateUser` (and therefore every login attempt) will throw a `PrismaClientValidationError` in the real database — even though the unit tests pass because they mock Prisma entirely.
 
-Four info items are noted for completeness.
+2. `auth.service.ts` — JWT secrets are read from `process.env` at every sign/verify call site rather than being validated at startup. If either secret is absent, `@nestjs/jwt` receives `undefined` and silently signs tokens with the string `"undefined"` — tokens that will appear valid during the same session but will fail cross-instance and restart verification.
 
-## Warnings
-
-### WR-01: Soft-deleted users can authenticate via `login()` and `refresh()`
-
-**File:** `apps/backend/src/auth/auth.service.ts:91-92` and `131-132`
-**Issue:** `login()` queries `prisma.user.findUnique({ where: { id: userId } })` and `refresh()` queries `prisma.user.findUnique({ where: { id: payload.sub } })` — neither includes `deleted_at: null`. A soft-deleted account can therefore receive fresh tokens after deletion. `signup()` and `validateUser()` both correctly include the filter; the omission here is inconsistent and creates a privilege-escalation path if account deletion is ever enforced.
-**Fix:**
-```typescript
-// auth.service.ts — login(), line 91
-const user = await this.prisma.user.findUnique({
-  where: { id: userId, deleted_at: null },
-});
-
-// auth.service.ts — refresh(), line 131
-const user = await this.prisma.user.findUnique({
-  where: { id: payload.sub, deleted_at: null },
-});
-```
+Five warnings and four info items are documented below.
 
 ---
 
-### WR-02: JWT secrets read from `process.env` at call time, not validated at startup
+## Critical Issues
 
-**File:** `apps/backend/src/auth/auth.service.ts:119`, `162`, `174`, `182`
-**Issue:** `signAccessToken()` and `signRefreshToken()` read `process.env['JWT_ACCESS_SECRET']` and `process.env['JWT_REFRESH_SECRET']` on every call. If a secret is missing the value is `undefined`, which `@nestjs/jwt` silently accepts and signs with the string `"undefined"`. The error (tokens signed with a worthless secret) would only be discovered when a signed token is later verified. By contrast, `JwtStrategy` correctly throws at construction time if `JWT_ACCESS_SECRET` is absent. The same early-fail pattern should be applied to the service.
-**Fix:** Inject secrets once at module init, either via `ConfigService` or by throwing during `AuthService` construction:
+### CR-01: `findUnique` with `deleted_at` filter will throw at runtime — use `findFirst`
+
+**File:** `apps/backend/src/auth/auth.service.ts:41-43` and `75-77`
+
+**Issue:** Prisma's `findUnique` only accepts fields that together constitute a unique index in its `where` clause. Passing `{ email: dto.email, deleted_at: null }` combines `email` (unique) with `deleted_at` (non-unique), which is not a valid `UserWhereUniqueInput`. Prisma v7 will throw a `PrismaClientValidationError` at runtime:
+
+```
+Argument `where` of type `UserWhereUniqueInput` needs exactly one argument, but received 2.
+```
+
+Because the unit tests mock Prisma entirely, this bug does not surface in the test suite. It will crash every signup attempt and every login attempt (via `validateUser`) against a real database.
+
+**Fix:** Replace `findUnique` with `findFirst` for any lookup that filters on non-unique columns alongside a unique one:
+
+```typescript
+// signup — line 41
+const existing = await this.prisma.user.findFirst({
+  where: { email: dto.email, deleted_at: null },
+});
+
+// validateUser — line 75
+const user = await this.prisma.user.findFirst({
+  where: { email, deleted_at: null },
+});
+```
+
+Note: `findFirst` does not guarantee the same uniqueness semantics as `findUnique` for the return value, but because `email` has a unique index in the schema, at most one non-deleted row will ever match, so the behavior is equivalent.
+
+---
+
+### CR-02: JWT secrets read from `process.env` at call time — undefined secret silently accepted
+
+**File:** `apps/backend/src/auth/auth.service.ts:119`, `162`, `174-175`, `181-182`
+
+**Issue:** `signAccessToken` and `signRefreshToken` pass `process.env['JWT_ACCESS_SECRET']` and `process.env['JWT_REFRESH_SECRET']` to `jwtService.sign/verify` on every invocation. If either variable is absent, the value is `undefined`. `@nestjs/jwt` (via `jsonwebtoken`) coerces `undefined` to the string `"undefined"` and uses it as the HMAC secret — signing tokens that look syntactically valid but are signed with a worthless secret. These tokens will be accepted by the same process in the same run but will fail verification anywhere else (different instance, after restart), and the problem will only appear as intermittent 401 errors rather than a clear startup failure.
+
+`JwtStrategy` (line 16-17 in `jwt.strategy.ts`) correctly validates `JWT_ACCESS_SECRET` at construction time and throws if missing. The same fail-fast pattern must be applied to `JWT_REFRESH_SECRET` and to the service's call sites.
+
+**Fix:** Validate and cache secrets in the `AuthService` constructor:
+
 ```typescript
 @Injectable()
 export class AuthService {
@@ -127,25 +131,67 @@ export class AuthService {
   ) {
     const accessSecret = process.env['JWT_ACCESS_SECRET'];
     const refreshSecret = process.env['JWT_REFRESH_SECRET'];
-    if (!accessSecret) throw new Error('JWT_ACCESS_SECRET is not set');
-    if (!refreshSecret) throw new Error('JWT_REFRESH_SECRET is not set');
+    if (!accessSecret) throw new Error('JWT_ACCESS_SECRET environment variable is not set');
+    if (!refreshSecret) throw new Error('JWT_REFRESH_SECRET environment variable is not set');
     this.accessSecret = accessSecret;
     this.refreshSecret = refreshSecret;
   }
-  // Use this.accessSecret / this.refreshSecret in sign/verify calls
+
+  private signAccessToken(payload: TokenPayload): string {
+    return this.jwtService.sign(payload, {
+      secret: this.accessSecret,
+      expiresIn: (process.env['JWT_ACCESS_EXPIRES_IN'] ?? '15m') as JwtSignOptions['expiresIn'],
+    });
+  }
+
+  private signRefreshToken(payload: TokenPayload): string {
+    return this.jwtService.sign(payload, {
+      secret: this.refreshSecret,
+      expiresIn: (process.env['JWT_REFRESH_EXPIRES_IN'] ?? '30d') as JwtSignOptions['expiresIn'],
+    });
+  }
 }
 ```
 
 ---
 
-### WR-03: `updateProfile()` leaks raw Prisma error when user does not exist
+## Warnings
+
+### WR-01: Soft-deleted users can log in and refresh tokens
+
+**File:** `apps/backend/src/auth/auth.service.ts:91-92` and `131-133`
+
+**Issue:** `login` and `refresh` look up users by `id` without filtering `deleted_at: null`. A soft-deleted account can receive fresh tokens after deletion. `signup` and `validateUser` correctly apply the filter; the omission here is an inconsistency that becomes a privilege-escalation path once account deactivation is enforced.
+
+**Fix:** Add `deleted_at: null` to both lookups:
+
+```typescript
+// login — line 91
+const user = await this.prisma.user.findUnique({
+  where: { id: userId, deleted_at: null },
+});
+
+// refresh — line 131
+const user = await this.prisma.user.findUnique({
+  where: { id: payload.sub, deleted_at: null },
+});
+```
+
+(`findUnique` with a primary key (`id`) plus `deleted_at` is valid Prisma — the uniqueness is determined by `id` alone, and `deleted_at` acts as an additional filter.)
+
+---
+
+### WR-02: `updateProfile()` leaks a raw Prisma error when the user does not exist
 
 **File:** `apps/backend/src/users/users.service.ts:59-69`
-**Issue:** `updateProfile()` calls `prisma.user.update({ where: { id } })` without first checking that the record exists. If the user ID is not found, Prisma throws `PrismaClientKnownRequestError` with code `P2025`. This exception is not a `DomainError` and is therefore not caught by `DomainExceptionFilter`, causing NestJS to return a generic 500 response (or an unhandled exception in production mode) rather than the expected 404. The `findById()` method in the same service already handles this correctly.
+
+**Issue:** `updateProfile` calls `prisma.user.update({ where: { id } })` without first checking that the record exists. If the user ID is absent, Prisma throws `PrismaClientKnownRequestError` with code `P2025`. This is not a `DomainError` and is not caught by `DomainExceptionFilter`, causing NestJS to return a generic 500 response (or an unhandled exception log) instead of a clean 404. `findById()` in the same service already handles this correctly.
+
 **Fix:**
+
 ```typescript
 async updateProfile(id: string, dto: UpdateProfileDto): Promise<UpdatedUserProfile> {
-  // Verify the user exists first (throws UserNotFoundError if not)
+  // Verifies existence and soft-delete in one call; throws UserNotFoundError if absent
   await this.findById(id);
 
   const updateData: Partial<{ name: string; timezone: string }> = {};
@@ -162,12 +208,52 @@ async updateProfile(id: string, dto: UpdateProfileDto): Promise<UpdatedUserProfi
 
 ---
 
-### WR-04: `setHydrating` in `useEffect` dependency array but never called in the effect
+### WR-03: Missing `MaxLength` on `SignupDto.password` — bcrypt CPU exhaustion possible
 
-**File:** `apps/frontend/src/App.tsx:58`
-**Issue:** `setHydrating` is included in the `useEffect` dependency array (`[setAuth, setHydrating, clearAuth]`) but is never invoked inside the effect body. The effect calls `setAuth` (which internally sets `isHydrating: false`) and `clearAuth` (which also sets `isHydrating: false`), so hydration state is managed correctly. However, the stale dependency is misleading — it implies `setHydrating` has a role it does not have — and `react-hooks/exhaustive-deps` will flag a "missing" usage. If the intent was to call `setHydrating(true)` at the start and `setHydrating(false)` in the `finally` branch, this is currently missing.
-**Fix (remove unused dep):**
+**File:** `apps/backend/src/auth/dto/signup.dto.ts:8-19`
+
+**Issue:** `password` has `@MinLength(8)` but no `@MaxLength`. bcrypt silently truncates input at 72 bytes, so two passwords sharing the same first 72 characters hash identically (a correctness issue), and a malicious actor can send a multi-kilobyte password to force bcrypt to spend significant CPU time on each signup request — a denial-of-service amplifier that operates within the 5-request-per-minute rate limit.
+
+**Fix:**
+
 ```typescript
+@IsString()
+@MinLength(8)
+@MaxLength(128)
+// ... existing @Matches decorators
+password!: string;
+```
+
+---
+
+### WR-04: `setAccessToken` in auth store does not update `isAuthenticated`
+
+**File:** `apps/frontend/src/stores/auth-store.ts:32`
+
+**Issue:** `setAccessToken` sets only `accessToken` without updating `isAuthenticated`. If a future code path calls `setAccessToken` independently (e.g., a partial token refresh), the store will hold a valid token but `isAuthenticated` will remain `false`, causing `PrivateRoute` to redirect to login.
+
+**Fix:**
+
+```typescript
+setAccessToken: (token: string) =>
+  set({ accessToken: token, isAuthenticated: true }),
+```
+
+Or remove `setAccessToken` entirely, since `setAuth` already handles the full atomic update and is what every current call site uses.
+
+---
+
+### WR-05: `setHydrating` in `App.tsx` `useEffect` dependency array but never called inside the effect
+
+**File:** `apps/frontend/src/App.tsx:43`, `58`
+
+**Issue:** `setHydrating` is destructured from the store and listed in the `useEffect` dependency array, but is never called inside the effect. Both `setAuth` and `clearAuth` already set `isHydrating: false` internally, so hydration state is managed correctly — but the stale dependency is misleading and will cause `react-hooks/exhaustive-deps` to emit a lint warning about an unused dependency.
+
+**Fix:**
+
+```typescript
+const { setAuth, clearAuth } = useAuthStore(); // remove setHydrating
+
 useEffect(() => {
   const hydrate = async (): Promise<void> => {
     try {
@@ -178,26 +264,21 @@ useEffect(() => {
     }
   };
   void hydrate();
-}, [setAuth, clearAuth]); // removed setHydrating — it is unused here
+}, [setAuth, clearAuth]); // remove setHydrating from deps
 ```
 
 ---
 
 ## Info
 
-### IN-01: `SignupDto.name` is required on the backend but `User.name` is optional in the schema
+### IN-01: Duplicate `clearCookie` options in `logout` — not reusing the shared constant
 
-**File:** `apps/backend/src/auth/dto/signup.dto.ts:22-26` and `apps/backend/prisma/schema.prisma:17`
-**Issue:** `SignupDto` marks `name` as a required field (`@IsNotEmpty()`), but the Prisma model defines `name String?` (nullable). This is an intentional inconsistency — the backend enforces a name at signup via the DTO, while the DB column stays nullable to allow future admin-created accounts or OAuth flows. The mismatch is not a bug today, but worth documenting so future flows that create users without a name do not require a DTO change.
-**Fix:** Add a comment on the DTO field clarifying the intent, or create a separate `AdminCreateUserDto` when that use-case arrives. No code change required now.
+**File:** `apps/backend/src/auth/auth.controller.ts:77-82`
 
----
+**Issue:** The `logout` handler calls `res.clearCookie` with inline options that duplicate `REFRESH_COOKIE_OPTIONS`. If `REFRESH_COOKIE_OPTIONS` is updated (e.g., `sameSite` changed), the `clearCookie` call must be updated separately or the cookie will not be cleared in the browser (mismatched attributes prevent cookie deletion).
 
-### IN-02: `process.env['NODE_ENV']` read at module load time for cookie `secure` flag
+**Fix:** Destructure the shared constant:
 
-**File:** `apps/backend/src/auth/auth.controller.ts:12`
-**Issue:** `REFRESH_COOKIE_OPTIONS` is defined as a module-level constant, so `process.env['NODE_ENV'] === 'production'` is evaluated once when the module is first loaded. This is fine in practice (NODE_ENV does not change at runtime), but duplicating the check at line 79 inside `clearCookie` is an inconsistency — if the constant is updated, the `clearCookie` call must be updated independently.
-**Fix:** Reuse `REFRESH_COOKIE_OPTIONS` in `clearCookie` by spreading relevant fields, or extract the `secure` flag to a shared constant:
 ```typescript
 res.clearCookie('refresh_token', {
   httpOnly: REFRESH_COOKIE_OPTIONS.httpOnly,
@@ -209,24 +290,52 @@ res.clearCookie('refresh_token', {
 
 ---
 
-### IN-03: `console.log` left in `main.ts` bootstrap
+### IN-02: `console.log` in production bootstrap
 
 **File:** `apps/backend/src/main.ts:36`
-**Issue:** `console.log(`Application is running on: http://localhost:${port}`)` is a startup message that leaks configuration details in a production log stream. For a dev-only project at this stage this is minor, but in a multi-tenant LMS it should be replaced with a proper logger (NestJS built-in `Logger`) so the output level can be controlled.
+
+**Issue:** `console.log` is used to print the server URL on startup. NestJS's built-in `Logger` should be used so output respects log levels in production environments.
+
 **Fix:**
+
 ```typescript
-// In bootstrap():
+import { Logger } from '@nestjs/common';
 const logger = new Logger('Bootstrap');
 logger.log(`Application is running on port ${port}`);
 ```
 
 ---
 
-### IN-04: `axios` interceptor URL matching relies on `originalRequest.url` which can be `undefined`
+### IN-03: Forgot password link is a non-functional anchor
 
-**File:** `apps/frontend/src/lib/axios.ts:54`
-**Issue:** `AUTH_ENDPOINTS.includes(originalRequest.url ?? '')` falls back to an empty string when `url` is undefined. An empty string is not in `AUTH_ENDPOINTS`, so undefined-URL requests will be treated as normal protected requests and trigger a refresh attempt on 401. This is a safe fallback, but the empty-string edge case is worth noting.
-**Fix:** No immediate code change required — the fallback is safe. If stricter matching is ever needed, guard with an explicit `if (!originalRequest.url) return Promise.reject(error);` before the check.
+**File:** `apps/frontend/src/pages/login.tsx:108`
+
+**Issue:** `<a href="#">Forgot password?</a>` scrolls to the top of the page on click and provides no functional behavior. Since the feature is not yet implemented, it should not present as a clickable link.
+
+**Fix:** Replace with a visually styled but non-interactive element until the feature is built:
+
+```tsx
+<span className="text-sm text-muted-foreground">Forgot password?</span>
+```
+
+---
+
+### IN-04: `SignupDto.name` is required but `User.name` is nullable in the schema
+
+**File:** `apps/backend/src/auth/dto/signup.dto.ts:22-26` and `apps/backend/prisma/schema.prisma:17`
+
+**Issue:** `SignupDto` marks `name` as required (`@IsNotEmpty()`), but the Prisma model defines `name String?` (nullable). The mismatch is not a bug today — the DTO enforces a name at signup while the nullable column allows future admin-created or OAuth-based accounts without a name. It is worth documenting so future code paths that create users without a name do not require a DTO change.
+
+**Fix:** Add an inline comment on the DTO field clarifying the intent. No code change required now.
+
+```typescript
+// Required at signup; DB column is nullable to support future admin-created / OAuth accounts
+@IsString()
+@IsNotEmpty()
+@MinLength(2)
+@MaxLength(100)
+name!: string;
+```
 
 ---
 
